@@ -71,6 +71,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scannedCode) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
+
+            if (modeFilter.value === "mark") {
+                previewTable.querySelector("tbody").innerHTML = ""; // Clear the table
+            }
+
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
                     if (modeFilter.value === "scan") {
@@ -84,7 +89,32 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     } else if (modeFilter.value === "mark") {
                         row.markedOff = true;
-                        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                        const rowElement = document.createElement("tr");
+                        rowElement.setAttribute('data-index', index);
+                        rowElement.innerHTML = `
+                            <td class="run-letter">${row.runLetter}</td>
+                            <td>${row.dropNumber}</td>
+                            <td>${row.location}</td>
+                            <td>${row.date}</td>
+                            <td>${row.soNumber}</td>
+                            <td>${row.name}</td>
+                            <td>${row.address}</td>
+                            <td>${row.suburb}</td>
+                            <td>${row.postcode}</td>
+                            <td>${row.phoneNumber}</td>
+                            <td>${row.flatpack}</td>
+                            <td>${row.channelBoxCount}</td>
+                            <td>${row.flooringBoxCount}</td>
+                            <td>${row.weight}</td>
+                            <td>${row.description}</td>
+                            <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+                            <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
+                            <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
+                        `;
+                        if (row.markedOff) {
+                            rowElement.children[17].classList.add("marked-off");
+                        }
+                        previewTable.querySelector("tbody").appendChild(rowElement);
                         rowElement.children[17].classList.add("marked-off");
                         rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                     }
