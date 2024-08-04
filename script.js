@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const zoomInButton = document.getElementById("zoom-in");
     const zoomOutButton = document.getElementById("zoom-out");
     const runFilter = document.getElementById("run-filter");
+    const modeFilter = document.getElementById("mode-filter");
 
     // Load data from local storage
     loadDataFromLocalStorage();
@@ -40,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     downloadReportButton.addEventListener("click", () => {
         const isComplete = confirm("Is this complete?");
         if (isComplete) {
-            const reportName = prompt("What should this report be called?", "Brisbane Run");
+            const reportName = prompt("What should this report be called?", "Report");
             if (reportName) {
                 downloadReport(reportName);
                 clearChecklistData();
@@ -48,21 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Handle beforeunload event to prompt user to save or clear the checklist
-    window.addEventListener('beforeunload', (event) => {
-        if (scannedProducts > 0) {
-            const confirmationMessage = 'You have unsaved changes. Do you really want to leave?';
-            event.returnValue = confirmationMessage; // Gecko, Trident, Chrome 34+
-            return confirmationMessage; // Gecko, WebKit, Chrome <34
-        }
-    });
-
-    window.addEventListener('unload', (event) => {
-        if (!confirm('Would you like to save your progress?')) {
-            clearChecklistData();
-        } else {
-            saveDataToLocalStorage();
-        }
+    // Handle mode filter change
+    modeFilter.addEventListener("change", () => {
+        displayPreviewData(previewData);
     });
 
     // Zoom in and zoom out functionality
@@ -78,22 +67,26 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Handle run filter change
-    runFilter.addEventListener("change", filterByRun);
-
     function processScanInput(scannedCode) {
         if (scannedCode) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
-                    row.scannedNumbers.add(scannedCode);
-                    if (row.scannedNumbers.size === row.productNumbers.length) {
+                    if (modeFilter.value === "scan") {
+                        row.scannedNumbers.add(scannedCode);
+                        if (row.scannedNumbers.size === row.productNumbers.length) {
+                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                            rowElement.children[10].classList.add("complete");
+                            rowElement.children[11].classList.add("complete");
+                            rowElement.children[12].classList.add("complete");
+                            rowElement.querySelector('.status').innerHTML = '✅';
+                        }
+                    } else if (modeFilter.value === "mark") {
+                        row.markedOff = true;
                         const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                        rowElement.children[10].classList.add("complete");
-                        rowElement.children[11].classList.add("complete");
-                        rowElement.children[12].classList.add("complete");
-                        rowElement.querySelector('.status').innerHTML = '✅';
+                        rowElement.children[17].classList.add("marked-off");
+                        rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                     }
                     found = true;
                     scannedProducts++;
@@ -227,6 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     description,
                     productNumbers,
                     scannedNumbers: new Set(),
+                    markedOff: false,
                     notes: ''
                 };
 
@@ -247,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const summaryRow = document.createElement("tr");
                     summaryRow.classList.add("run-summary");
                     summaryRow.innerHTML = `
-                        <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                        <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                     `;
                     previewTbody.appendChild(summaryRow);
                     currentRunTotalWeight = 0;
@@ -282,6 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${weight}</td>
                     <td>${description}</td>
                     <td class="status"></td>
+                    <td class="marked-off-status"></td>
                     <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
                 `;
                 previewTbody.appendChild(rowElement);
@@ -301,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
             }
@@ -351,7 +346,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const channelBoxCount = row[11] || 0;
                 const flooringBoxCount = row[12] || 0;
                 const status = row[15];
-                const notes = row[16];
+                const markedOff = row[16] === 'true';
+                const notes = row[17];
 
                 previewData.forEach(previewRow => {
                     if (previewRow.soNumber === soNumber) {
@@ -359,6 +355,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         if (status === 'Complete') {
                             previewRow.scannedNumbers = new Set(previewRow.productNumbers);
+                        }
+
+                        previewRow.markedOff = markedOff;
+                        if (markedOff) {
+                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                            rowElement.children[17].classList.add("marked-off");
+                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                         }
 
                         if (flatpack > 0) previewRow.flatpack = flatpack;
@@ -432,7 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
                 currentRunTotalWeight = 0;
@@ -464,7 +467,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const summaryRow = document.createElement("tr");
             summaryRow.classList.add("run-summary");
             summaryRow.innerHTML = `
-                <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
             `;
             previewTbody.appendChild(summaryRow);
         }
@@ -497,12 +500,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${row.weight}</td>
                 <td>${row.description}</td>
                 <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+                <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
                 <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
             `;
             if (row.scannedNumbers.size === row.productNumbers.length) {
                 rowElement.children[10].classList.add("complete");
                 rowElement.children[11].classList.add("complete");
                 rowElement.children[12].classList.add("complete");
+            }
+            if (row.markedOff) {
+                rowElement.children[17].classList.add("marked-off");
             }
             previewTbody.appendChild(rowElement);
         });
@@ -541,6 +548,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Weight: row.weight,
             Description: row.description,
             Status: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
+            MarkedOff: row.markedOff ? 'true' : 'false',
             Notes: row.notes
         }));
 
@@ -631,12 +639,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${row.weight}</td>
                     <td>${row.description}</td>
                     <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+                    <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
                     <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
                 `;
                 if (row.scannedNumbers.size === row.productNumbers.length) {
                     rowElement.children[10].classList.add("complete");
                     rowElement.children[11].classList.add("complete");
                     rowElement.children[12].classList.add("complete");
+                }
+                if (row.markedOff) {
+                    rowElement.children[17].classList.add("marked-off");
                 }
                 previewTbody.appendChild(rowElement);
             });
