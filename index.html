@@ -1,0 +1,102 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Checklist</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .status-column {
+            width: 200px;
+        }
+        .run-complete {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: green;
+        }
+        .preview-table {
+            width: 100%;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+        .preview-table th, .preview-table td {
+            padding: 0.5rem;
+            text-align: left;
+            word-break: break-word;
+        }
+        .preview-table th {
+            background-color: #333;
+            color: white;
+        }
+        .preview-table td {
+            background-color: #555;
+            color: white;
+        }
+        .complete {
+            text-decoration: line-through;
+            color: #00FF00; /* Green color */
+        }
+        .unknown-scan {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: red;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 text-white p-4">
+    <div class="container mx-auto">
+        <div>
+            <h1 class="text-2xl font-bold mb-4">Product Checklist</h1>
+            <input type="file" id="file-input" class="mb-4 text-black p-2">
+            <input type="file" id="saved-report-input" class="mb-4 text-black p-2">
+            <input type="text" id="scan-input" class="border p-4 w-full mb-4 text-black" placeholder="Scan product or SO number..." autofocus>
+            <div id="unknown-scan" class="unknown-scan hidden">Unknown Scan</div>
+            <label for="run-filter" class="block mb-2">Filter by Run:</label>
+            <select id="run-filter" class="border p-2 w-full mb-4 text-black">
+                <option value="all">All</option>
+            </select>
+            <div class="overflow-x-auto">
+                <table id="preview-table" class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Run</th>
+                            <th>Drop</th>
+                            <th>Location</th>
+                            <th>Date</th>
+                            <th>SO Number</th>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Suburb</th>
+                            <th>Postcode</th>
+                            <th>Phone Number</th>
+                            <th>Flatpack</th>
+                            <th>Channel Box</th>
+                            <th>Flooring Box</th>
+                            <th>Weight</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Preview data will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button id="send-report-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4">Send Report</button>
+                <button id="download-report-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4">Download Report</button>
+                <button id="zoom-in" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom In</button>
+                <button id="zoom-out" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom Out</button>
+            </div>
+        </div>
+    </div>
+    <div id="run-complete" class="run-complete text-center hidden">
+        Run Complete
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
