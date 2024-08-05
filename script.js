@@ -347,68 +347,6 @@ document.addEventListener("DOMContentLoaded", () => {
         reader.readAsArrayBuffer(file);
     }
 
-    function handleSavedReportUpload(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            alert("No file selected.");
-            return;
-        }
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-            if (!sheetData || sheetData.length === 0) {
-                alert("Invalid or empty file.");
-                return;
-            }
-
-            sheetData.forEach((row, index) => {
-                if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
-
-                const soNumber = row[4];
-                const flatpack = row[8] || 0;
-                const channelBoxCount = row[9] || 0;
-                const flooringBoxCount = row[10] || 0;
-                const status = row[13];
-                const markedOff = row[14] === 'true';
-                const notes = row[15];
-
-                previewData.forEach(previewRow => {
-                    if (previewRow.soNumber === soNumber) {
-                        previewRow.notes = notes;
-
-                        if (status === 'Complete') {
-                            previewRow.scannedNumbers = new Set(previewRow.productNumbers);
-                        }
-
-                        previewRow.markedOff = markedOff;
-                        if (markedOff) {
-                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[14].classList.add("marked-off");
-                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-                        }
-
-                        if (flatpack > 0) previewRow.flatpack = flatpack;
-                        if (channelBoxCount > 0) previewRow.channelBoxCount = channelBoxCount;
-                        if (flooringBoxCount > 0) previewRow.flooringBoxCount = flooringBoxCount;
-                    }
-                });
-            });
-
-            // Update the displayed data
-            displayPreviewData(previewData);
-            saveDataToLocalStorage();
-            checkRunCompletion();
-        };
-
-        reader.readAsArrayBuffer(file);
-    }
-
     function formatDate(dateValue) {
         const date = new Date(dateValue);
         return isNaN(date.getTime()) ? dateValue : date.toLocaleDateString();
