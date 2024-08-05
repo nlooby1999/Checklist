@@ -10,9 +10,8 @@ let zoomLevel = 1;
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
-    const savedReportInput = document.getElementById("saved-report-input");
     const downloadReportButton = document.getElementById("download-report-button");
-    const resetButton = document.getElementById("reset-button");
+    const removeChecklistButton = document.getElementById("remove-checklist-button");
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
@@ -26,9 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle file input change
     fileInput.addEventListener("change", handleFileUpload);
-
-    // Handle saved report file input change
-    savedReportInput.addEventListener("change", handleSavedReportUpload);
 
     // Handle scan input
     scanInput.addEventListener("keypress", (event) => {
@@ -50,12 +46,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Handle reset button click
-    resetButton.addEventListener("click", () => {
-        const confirmReset = confirm("Are you sure you want to reset the checklist?");
-        if (confirmReset) {
+    // Handle remove checklist button click
+    removeChecklistButton.addEventListener("click", () => {
+        const confirmRemove = confirm("Are you sure you want to remove the checklist?");
+        if (confirmRemove) {
             clearChecklistData();
-            alert("Checklist has been reset.");
+            alert("Checklist has been removed.");
         }
     });
 
