@@ -153,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
         previewTbody.appendChild(rowElement);
     }
 
-    function handleFileUpload(event) {
+    async function handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) {
             alert("No file selected.");
@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const reader = new FileReader();
 
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
             const sheetName = workbook.SheetNames[0];
@@ -190,8 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
             let currentRunTotalChannels = 0;
             let currentRunTotalFlooring = 0;
 
-            sheetData.forEach((row, index) => {
-                if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
+            for (let index = 0; index < sheetData.length; index++) {
+                const row = sheetData[index];
+                if (row.length < 15 || !row[4]) continue; // Skip rows with insufficient data or no SO Number
 
                 const runLetter = row[0];
                 const dropNumber = row[1];
@@ -314,7 +315,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
                 `;
                 previewTbody.appendChild(rowElement);
-            });
+
+                // Process in chunks to avoid memory issues
+                if (index % 50 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
 
             // Add final summary row for the last run
             if (currentRun) {
