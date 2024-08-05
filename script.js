@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Checklist</title>
+    <title>EasyShed Dispatch - Product Checklist</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .container {
@@ -38,6 +38,9 @@
             background-color: #555;
             color: white;
         }
+        .preview-table tr:nth-child(even) td {
+            background-color: #666;
+        }
         .complete {
             text-decoration: line-through;
             color: #00FF00; /* Green color */
@@ -50,22 +53,86 @@
             font-weight: bold;
             color: red;
         }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .preview-table th, .preview-table td {
+                padding: 0.25rem;
+                font-size: 0.875rem;
+            }
+            .flex-wrap {
+                flex-wrap: wrap;
+            }
+            .flex {
+                display: flex;
+                flex-direction: column;
+            }
+            .text-2xl {
+                font-size: 1.5rem;
+            }
+            .text-xl {
+                font-size: 1.25rem;
+            }
+            .text-lg {
+                font-size: 1.125rem;
+            }
+            .text-base {
+                font-size: 1rem;
+            }
+            .text-sm {
+                font-size: 0.875rem;
+            }
+            .p-4 {
+                padding: 1rem;
+            }
+            .p-2 {
+                padding: 0.5rem;
+            }
+        }
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            fill: #000;
+        }
+        .search-input {
+            padding-left: 40px; /* Adjust according to the icon size and position */
+        }
     </style>
 </head>
 <body class="bg-gray-800 text-white p-4">
     <div class="container mx-auto">
         <div>
-            <h1 class="text-2xl font-bold mb-4">Product Checklist</h1>
+            <h1 class="text-2xl font-bold mb-4">EasyShed Dispatch - Product Checklist</h1>
             <div class="flex gap-2 mb-4">
                 <input type="file" id="file-input" class="text-black p-2">
-                <input type="file" id="saved-report-input" class="text-black p-2">
             </div>
             <div class="flex gap-2 mb-4">
                 <select id="mode-filter" class="border p-2 text-black">
-                    <option value="scan">Scan Mode</option>
-                    <option value="mark">Mark Off Mode</option>
+                    <option value="check">Check Off</option>
+                    <option value="mark">Mark Off</option>
                 </select>
-                <input type="text" id="scan-input" class="border p-4 w-full text-black" placeholder="Scan product or SO number..." autofocus>
+                <div class="search-wrapper">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M10 2a8 8 0 0 1 6.32 12.906l5.387 5.387-1.414 1.414-5.387-5.387A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/>
+                    </svg>
+                    <input type="text" id="scan-input" class="border p-4 w-full text-black search-input" placeholder="Scan product or SO number..." autofocus>
+                </div>
+                <select id="filter-status" class="border p-2 text-black">
+                    <option value="all">Display All</option>
+                    <option value="not-marked">Not Marked</option>
+                    <option value="marked">Marked</option>
+                </select>
+                <button id="reload-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 hidden">Reload</button>
             </div>
             <div id="unknown-scan" class="unknown-scan hidden">Unknown Scan</div>
             <div class="overflow-x-auto">
@@ -130,6 +197,8 @@
             const zoomOutButton = document.getElementById("zoom-out");
             const runFilter = document.getElementById("run-filter");
             const modeFilter = document.getElementById("mode-filter");
+            const reloadButton = document.getElementById("reload-button");
+            const filterStatus = document.getElementById("filter-status");
 
             // Load data from local storage
             loadDataFromLocalStorage();
@@ -145,6 +214,7 @@
                 if (scanInput.value.length === 11) {
                     processScanInput(scanInput.value.trim());
                     scanInput.value = "";
+                    scanInput.focus();
                 }
             });
 
@@ -162,6 +232,23 @@
 
             // Handle mode filter change
             modeFilter.addEventListener("change", () => {
+                if (modeFilter.value === "mark") {
+                    reloadButton.classList.remove("hidden");
+                } else {
+                    reloadButton.classList.add("hidden");
+                }
+                displayPreviewData(previewData);
+            });
+
+            // Handle reload button click
+            reloadButton.addEventListener("click", () => {
+                displayPreviewData(allPreviewData);
+                scanInput.value = "";
+                scanInput.focus();
+            });
+
+            // Handle filter status change
+            filterStatus.addEventListener("change", () => {
                 displayPreviewData(previewData);
             });
 
@@ -184,7 +271,7 @@
                     unknownScanDiv.classList.add("hidden");
                     previewData.forEach((row, index) => {
                         if (row.productNumbers.includes(scannedCode)) {
-                            if (modeFilter.value === "scan") {
+                            if (modeFilter.value === "check") {
                                 row.scannedNumbers.add(scannedCode);
                                 if (row.scannedNumbers.size === row.productNumbers.length) {
                                     const rowElement = document.querySelector(`tr[data-index="${index}"]`);
@@ -264,7 +351,7 @@
                         const runLetter = row[0];
                         const dropNumber = row[1];
                         const location = row[2];
-                        const date = formatDate(row[3]); // Format the date
+                        const date = row[3]; // Read the date as text
                         const soNumber = row[4];
                         const name = row[5];
                         const address = row[6];
