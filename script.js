@@ -23,11 +23,12 @@
             width: 100%;
             margin-bottom: 1rem;
             overflow-x: auto;
+            white-space: nowrap;
         }
         .preview-table th, .preview-table td {
             padding: 0.5rem;
             text-align: left;
-            word-break: break-word;
+            word-break: keep-all;
         }
         .preview-table th {
             background-color: #333;
