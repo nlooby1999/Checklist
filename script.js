@@ -142,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
         previewTbody.appendChild(rowElement);
     }
 
-    async function handleFileUpload(event) {
+    function handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) {
             alert("No file selected.");
