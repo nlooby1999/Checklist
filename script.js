@@ -87,9 +87,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         row.scannedNumbers.add(scannedCode);
                         if (row.scannedNumbers.size === row.productNumbers.length) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                            rowElement.children[8].classList.add("complete");
                             rowElement.children[9].classList.add("complete");
                             rowElement.children[10].classList.add("complete");
-                            rowElement.children[11].classList.add("complete");
                             rowElement.querySelector('.status').innerHTML = '✅';
                         }
                     } else if (modeFilter.value === "mark") {
@@ -148,13 +148,17 @@ document.addEventListener("DOMContentLoaded", () => {
             <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
         `;
         if (row.markedOff) {
-            rowElement.children[14].classList.add("marked-off");
+            rowElement.children[13].classList.add("marked-off");
         }
         previewTbody.appendChild(rowElement);
     }
 
     function handleFileUpload(event) {
         const file = event.target.files[0];
+        if (!file) {
+            alert("No file selected.");
+            return;
+        }
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -164,7 +168,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const sheet = workbook.Sheets[sheetName];
             const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            console.log(sheetData);  // Debugging: Log the parsed sheet data
+            if (!sheetData || sheetData.length === 0) {
+                alert("Invalid or empty file.");
+                return;
+            }
 
             products = [];
             consignments = {};
@@ -175,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
             runSummaries = [];
             runCompleteDiv.classList.add("hidden");
 
-            // Populate previewData and preview table
             const previewTbody = previewTable.querySelector("tbody");
             previewTbody.innerHTML = ""; // Clear any existing preview data
             let currentRun = '';
@@ -273,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const summaryRow = document.createElement("tr");
                     summaryRow.classList.add("run-summary");
                     summaryRow.innerHTML = `
-                        <td colspan="16"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                        <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                     `;
                     previewTbody.appendChild(summaryRow);
                     currentRunTotalWeight = 0;
@@ -326,7 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="16"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
             }
@@ -343,6 +349,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function handleSavedReportUpload(event) {
         const file = event.target.files[0];
+        if (!file) {
+            alert("No file selected.");
+            return;
+        }
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -352,7 +362,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const sheet = workbook.Sheets[sheetName];
             const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            console.log(sheetData); // Debugging: Log the parsed sheet data
+            if (!sheetData || sheetData.length === 0) {
+                alert("Invalid or empty file.");
+                return;
+            }
 
             sheetData.forEach((row, index) => {
                 if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
@@ -451,7 +464,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="16"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
                 currentRunTotalWeight = 0;
@@ -483,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const summaryRow = document.createElement("tr");
             summaryRow.classList.add("run-summary");
             summaryRow.innerHTML = `
-                <td colspan="16"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
             `;
             previewTbody.appendChild(summaryRow);
         }
@@ -518,9 +531,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
             `;
             if (row.scannedNumbers.size === row.productNumbers.length) {
+                rowElement.children[8].classList.add("complete");
                 rowElement.children[9].classList.add("complete");
                 rowElement.children[10].classList.add("complete");
-                rowElement.children[11].classList.add("complete");
             }
             if (row.markedOff) {
                 rowElement.children[14].classList.add("marked-off");
@@ -643,9 +656,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
                 `;
                 if (row.scannedNumbers.size === row.productNumbers.length) {
+                    rowElement.children[8].classList.add("complete");
                     rowElement.children[9].classList.add("complete");
                     rowElement.children[10].classList.add("complete");
-                    rowElement.children[11].classList.add("complete");
                 }
                 if (row.markedOff) {
                     rowElement.children[14].classList.add("marked-off");
