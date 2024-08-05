@@ -189,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let currentRunTotalFlatpacks = 0;
             let currentRunTotalChannels = 0;
             let currentRunTotalFlooring = 0;
-            let runSet = new Set();
 
             sheetData.forEach((row, index) => {
                 if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
@@ -264,7 +263,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 previewData.push(rowData);
                 allPreviewData.push(rowData);
-                runSet.add(runLetter);
 
                 if (currentRun && currentRun !== runLetter) {
                     runSummaries.push({
