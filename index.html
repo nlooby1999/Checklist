@@ -195,10 +195,7 @@
                                 }
                             } else if (modeFilter.value === "mark") {
                                 row.markedOff = true;
-                                const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                                rowElement.children[17].classList.add("marked-off");
-                                rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-                                displayPreviewData(previewData);
+                                displayScannedConsignment(row);
                             }
                             found = true;
                             scannedProducts++;
@@ -593,8 +590,6 @@
                 previewTbody.innerHTML = ""; // Clear existing preview data
 
                 data.forEach((row, index) => {
-                    if (modeFilter.value === "mark" && !row.markedOff) return;
-
                     const rowElement = document.createElement("tr");
                     rowElement.setAttribute('data-index', index);
                     rowElement.innerHTML = `
@@ -632,6 +627,35 @@
                 document.querySelectorAll('.notes-input').forEach(input => {
                     input.addEventListener('input', handleNotesInput);
                 });
+            }
+
+            function displayScannedConsignment(row) {
+                const previewTbody = previewTable.querySelector("tbody");
+                previewTbody.innerHTML = ""; // Clear existing preview data
+
+                const rowElement = document.createElement("tr");
+                rowElement.innerHTML = `
+                    <td class="run-letter">${row.runLetter}</td>
+                    <td>${row.dropNumber}</td>
+                    <td>${row.location}</td>
+                    <td>${row.date}</td>
+                    <td>${row.soNumber}</td>
+                    <td>${row.name}</td>
+                    <td>${row.address}</td>
+                    <td>${row.suburb}</td>
+                    <td>${row.postcode}</td>
+                    <td>${row.phoneNumber}</td>
+                    <td>${row.flatpack}</td>
+                    <td>${row.channelBoxCount}</td>
+                    <td>${row.flooringBoxCount}</td>
+                    <td>${row.weight}</td>
+                    <td>${row.description}</td>
+                    <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+                    <td class="marked-off-status">✅</td>
+                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${row.index}" value="${row.notes}" /></td>
+                `;
+                rowElement.children[17].classList.add("marked-off");
+                previewTbody.appendChild(rowElement);
             }
 
             function filterByRun() {
