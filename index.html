@@ -49,6 +49,13 @@
             font-weight: bold;
             color: red;
         }
+        .zoom-control {
+            cursor: pointer;
+            padding: 0.5rem;
+            background-color: #007BFF;
+            color: white;
+            margin: 0.2rem;
+        }
     </style>
 </head>
 <body class="bg-gray-800 text-white p-4">
@@ -96,8 +103,8 @@
             <div class="flex flex-wrap gap-2 mt-4">
                 <button id="download-report-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4">Download Report</button>
                 <button id="remove-checklist-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4">Remove Checklist</button>
-                <button id="zoom-in" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom In</button>
-                <button id="zoom-out" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom Out</button>
+                <button id="zoom-in" class="zoom-control">Zoom In</button>
+                <button id="zoom-out" class="zoom-control">Zoom Out</button>
             </div>
         </div>
     </div>
