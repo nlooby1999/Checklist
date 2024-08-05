@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewTable = document.getElementById("preview-table");
     const zoomInButton = document.getElementById("zoom-in");
     const zoomOutButton = document.getElementById("zoom-out");
+    const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
 
     // Load data from local storage
@@ -48,6 +49,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Handle mode filter change
+    modeFilter.addEventListener("change", () => {
+        displayPreviewData(previewData);
+    });
+
     // Zoom in and zoom out functionality
     zoomInButton.addEventListener("click", () => {
         zoomLevel += 0.1;
@@ -65,25 +71,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scannedCode) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
-
-            if (modeFilter.value === "mark") {
-                previewTable.querySelector("tbody").innerHTML = ""; // Clear the table
-            }
-
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
                     if (modeFilter.value === "scan") {
                         row.scannedNumbers.add(scannedCode);
                         if (row.scannedNumbers.size === row.productNumbers.length) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[8].classList.add("complete");
-                            rowElement.children[9].classList.add("complete");
                             rowElement.children[10].classList.add("complete");
+                            rowElement.children[11].classList.add("complete");
+                            rowElement.children[12].classList.add("complete");
                             rowElement.querySelector('.status').innerHTML = '✅';
                         }
                     } else if (modeFilter.value === "mark") {
                         row.markedOff = true;
-                        displayScannedRow(row, index);
+                        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                        rowElement.children[17].classList.add("marked-off");
+                        rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                     }
                     found = true;
                     scannedProducts++;
@@ -114,53 +117,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function displayScannedRow(row, index) {
-        const previewTbody = previewTable.querySelector("tbody");
-        const rowElement = document.createElement("tr");
-        rowElement.setAttribute('data-index', index);
-        rowElement.innerHTML = `
-            <td class="run-letter">${row.runLetter}</td>
-            <td>${row.dropNumber}</td>
-            <td>${row.location}</td>
-            <td>${row.date}</td>
-            <td>${row.soNumber}</td>
-            <td>${row.name}</td>
-            <td>${row.address}</td>
-            <td>${row.suburb}</td>
-            <td>${row.flatpack}</td>
-            <td>${row.channelBoxCount}</td>
-            <td>${row.flooringBoxCount}</td>
-            <td>${row.weight}</td>
-            <td>${row.description}</td>
-            <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-            <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-            <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
-        `;
-        if (row.markedOff) {
-            rowElement.children[13].classList.add("marked-off");
-        }
-        previewTbody.appendChild(rowElement);
-    }
-
     function handleFileUpload(event) {
         const file = event.target.files[0];
-        if (!file) {
-            alert("No file selected.");
-            return;
-        }
         const reader = new FileReader();
 
-        reader.onload = async (e) => {
+        reader.onload = (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: "array" });
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            if (!sheetData || sheetData.length === 0) {
-                alert("Invalid or empty file.");
-                return;
-            }
+            console.log(sheetData);  // Debugging: Log the parsed sheet data
 
             products = [];
             consignments = {};
@@ -171,6 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
             runSummaries = [];
             runCompleteDiv.classList.add("hidden");
 
+            // Populate previewData and preview table
             const previewTbody = previewTable.querySelector("tbody");
             previewTbody.innerHTML = ""; // Clear any existing preview data
             let currentRun = '';
@@ -178,10 +147,10 @@ document.addEventListener("DOMContentLoaded", () => {
             let currentRunTotalFlatpacks = 0;
             let currentRunTotalChannels = 0;
             let currentRunTotalFlooring = 0;
+            let runSet = new Set();
 
-            for (let index = 0; index < sheetData.length; index++) {
-                const row = sheetData[index];
-                if (row.length < 15 || !row[4]) continue; // Skip rows with insufficient data or no SO Number
+            sheetData.forEach((row, index) => {
+                if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
 
                 const runLetter = row[0];
                 const dropNumber = row[1];
@@ -191,11 +160,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 const name = row[5];
                 const address = row[6];
                 const suburb = row[7];
-                const flatpack = row[8] || 0; // Column K
-                const channelBoxCount = row[9] || 0; // Column L
-                const flooringBoxCount = row[10] || 0; // Column M
-                const weight = parseFloat(row[11]) || 0;
-                const description = row[12];
+                const postcode = row[8];
+                const phoneNumber = row[9];
+                const flatpack = row[10] || 0; // Column K
+                const channelBoxCount = row[11] || 0; // Column L
+                const flooringBoxCount = row[12] || 0; // Column M
+                const weight = parseFloat(row[13]) || 0;
+                const description = row[14];
                 const totalCount = flatpack + channelBoxCount + flooringBoxCount;
                 const productNumbers = [];
                 let suffix = 1;
@@ -240,6 +211,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     name,
                     address,
                     suburb,
+                    postcode,
+                    phoneNumber,
                     flatpack,
                     channelBoxCount,
                     flooringBoxCount,
@@ -253,6 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 previewData.push(rowData);
                 allPreviewData.push(rowData);
+                runSet.add(runLetter);
 
                 if (currentRun && currentRun !== runLetter) {
                     runSummaries.push({
@@ -267,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const summaryRow = document.createElement("tr");
                     summaryRow.classList.add("run-summary");
                     summaryRow.innerHTML = `
-                        <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                        <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                     `;
                     previewTbody.appendChild(summaryRow);
                     currentRunTotalWeight = 0;
@@ -294,6 +268,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${name}</td>
                     <td>${address}</td>
                     <td>${suburb}</td>
+                    <td>${postcode}</td>
+                    <td>${phoneNumber}</td>
                     <td>${flatpack}</td>
                     <td>${channelBoxCount}</td>
                     <td>${flooringBoxCount}</td>
@@ -304,12 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
                 `;
                 previewTbody.appendChild(rowElement);
-
-                // Process in chunks to avoid memory issues
-                if (index % 50 === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                }
-            }
+            });
 
             // Add final summary row for the last run
             if (currentRun) {
@@ -325,10 +296,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
             }
+
+            // Populate the run filter dropdown
+            runFilter.innerHTML = '<option value="all">All</option>';
+            runSet.forEach(run => {
+                const option = document.createElement("option");
+                option.value = run;
+                option.textContent = run;
+                runFilter.appendChild(option);
+            });
+
+            // Add event listeners to notes inputs
+            document.querySelectorAll('.notes-input').forEach(input => {
+                input.addEventListener('input', handleNotesInput);
+            });
 
             // Save data to local storage
             saveDataToLocalStorage();
@@ -375,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         previewRow.markedOff = markedOff;
                         if (markedOff) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[13].classList.add("marked-off");
+                            rowElement.children[17].classList.add("marked-off");
                             rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                         }
 
@@ -450,7 +435,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
                 currentRunTotalWeight = 0;
@@ -482,7 +467,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const summaryRow = document.createElement("tr");
             summaryRow.classList.add("run-summary");
             summaryRow.innerHTML = `
-                <td colspan="15"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
             `;
             previewTbody.appendChild(summaryRow);
         }
@@ -507,6 +492,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${row.name}</td>
                 <td>${row.address}</td>
                 <td>${row.suburb}</td>
+                <td>${row.postcode}</td>
+                <td>${row.phoneNumber}</td>
                 <td>${row.flatpack}</td>
                 <td>${row.channelBoxCount}</td>
                 <td>${row.flooringBoxCount}</td>
@@ -517,12 +504,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
             `;
             if (row.scannedNumbers.size === row.productNumbers.length) {
-                rowElement.children[8].classList.add("complete");
-                rowElement.children[9].classList.add("complete");
                 rowElement.children[10].classList.add("complete");
+                rowElement.children[11].classList.add("complete");
+                rowElement.children[12].classList.add("complete");
             }
             if (row.markedOff) {
-                rowElement.children[14].classList.add("marked-off");
+                rowElement.children[17].classList.add("marked-off");
             }
             previewTbody.appendChild(rowElement);
         });
@@ -531,6 +518,16 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.notes-input').forEach(input => {
             input.addEventListener('input', handleNotesInput);
         });
+    }
+
+    function filterByRun() {
+        const selectedRun = runFilter.value;
+        if (selectedRun === "all") {
+            displayPreviewData(allPreviewData);
+        } else {
+            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
+            displayPreviewData(filteredData);
+        }
     }
 
     function downloadReport(reportName) {
@@ -543,6 +540,8 @@ document.addEventListener("DOMContentLoaded", () => {
             Name: row.name,
             Address: row.address,
             Suburb: row.suburb,
+            Postcode: row.postcode,
+            'Phone Number': row.phoneNumber,
             Flatpacks: row.flatpack,
             Channel: row.channelBoxCount,
             Flooring: row.flooringBoxCount,
@@ -632,6 +631,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${row.name}</td>
                     <td>${row.address}</td>
                     <td>${row.suburb}</td>
+                    <td>${row.postcode}</td>
+                    <td>${row.phoneNumber}</td>
                     <td>${row.flatpack}</td>
                     <td>${row.channelBoxCount}</td>
                     <td>${row.flooringBoxCount}</td>
@@ -642,12 +643,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
                 `;
                 if (row.scannedNumbers.size === row.productNumbers.length) {
-                    rowElement.children[8].classList.add("complete");
-                    rowElement.children[9].classList.add("complete");
                     rowElement.children[10].classList.add("complete");
+                    rowElement.children[11].classList.add("complete");
+                    rowElement.children[12].classList.add("complete");
                 }
                 if (row.markedOff) {
-                    rowElement.children[14].classList.add("marked-off");
+                    rowElement.children[17].classList.add("marked-off");
                 }
                 previewTbody.appendChild(rowElement);
             });
