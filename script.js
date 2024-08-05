@@ -10,8 +10,8 @@ let zoomLevel = 1;
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
+    const savedReportInput = document.getElementById("saved-report-input");
     const downloadReportButton = document.getElementById("download-report-button");
-    const removeChecklistButton = document.getElementById("remove-checklist-button");
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
@@ -24,6 +24,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle file input change
     fileInput.addEventListener("change", handleFileUpload);
+
+    // Handle saved report file input change
+    savedReportInput.addEventListener("change", handleSavedReportUpload);
 
     // Handle scan input
     scanInput.addEventListener("keypress", (event) => {
@@ -43,20 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 clearChecklistData();
             }
         }
-    });
-
-    // Handle remove checklist button click
-    removeChecklistButton.addEventListener("click", () => {
-        const confirmRemove = confirm("Are you sure you want to remove the checklist?");
-        if (confirmRemove) {
-            clearChecklistData();
-            alert("Checklist has been removed.");
-        }
-    });
-
-    // Handle mode filter change
-    modeFilter.addEventListener("change", () => {
-        displayPreviewData(previewData);
     });
 
     // Zoom in and zoom out functionality
@@ -346,6 +335,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Display preview data
             displayPreviewData(previewData);
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function handleSavedReportUpload(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            console.log(sheetData); // Debugging: Log the parsed sheet data
+
+            sheetData.forEach((row, index) => {
+                if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
+
+                const soNumber = row[4];
+                const flatpack = row[10] || 0;
+                const channelBoxCount = row[11] || 0;
+                const flooringBoxCount = row[12] || 0;
+                const status = row[15];
+                const markedOff = row[16] === 'true';
+                const notes = row[17];
+
+                previewData.forEach(previewRow => {
+                    if (previewRow.soNumber === soNumber) {
+                        previewRow.notes = notes;
+
+                        if (status === 'Complete') {
+                            previewRow.scannedNumbers = new Set(previewRow.productNumbers);
+                        }
+
+                        previewRow.markedOff = markedOff;
+                        if (markedOff) {
+                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                            rowElement.children[13].classList.add("marked-off");
+                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
+                        }
+
+                        if (flatpack > 0) previewRow.flatpack = flatpack;
+                        if (channelBoxCount > 0) previewRow.channelBoxCount = channelBoxCount;
+                        if (flooringBoxCount > 0) previewRow.flooringBoxCount = flooringBoxCount;
+                    }
+                });
+            });
+
+            // Update the displayed data
+            displayPreviewData(previewData);
+            saveDataToLocalStorage();
+            checkRunCompletion();
         };
 
         reader.readAsArrayBuffer(file);
