@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EasyShed Dispatch - Product Checklist</title>
+    <title>Product Checklist</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .container {
@@ -38,9 +38,6 @@
             background-color: #555;
             color: white;
         }
-        .preview-table tr:nth-child(even) td {
-            background-color: #666;
-        }
         .complete {
             text-decoration: line-through;
             color: #00FF00; /* Green color */
@@ -53,86 +50,22 @@
             font-weight: bold;
             color: red;
         }
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .preview-table th, .preview-table td {
-                padding: 0.25rem;
-                font-size: 0.875rem;
-            }
-            .flex-wrap {
-                flex-wrap: wrap;
-            }
-            .flex {
-                display: flex;
-                flex-direction: column;
-            }
-            .text-2xl {
-                font-size: 1.5rem;
-            }
-            .text-xl {
-                font-size: 1.25rem;
-            }
-            .text-lg {
-                font-size: 1.125rem;
-            }
-            .text-base {
-                font-size: 1rem;
-            }
-            .text-sm {
-                font-size: 0.875rem;
-            }
-            .p-4 {
-                padding: 1rem;
-            }
-            .p-2 {
-                padding: 0.5rem;
-            }
-        }
-        .search-wrapper {
-            position: relative;
-            flex: 1;
-        }
-        .search-icon {
-            position: absolute;
-            top: 50%;
-            left: 10px;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            fill: #000;
-        }
-        .search-input {
-            padding-left: 40px; /* Adjust according to the icon size and position */
-        }
     </style>
 </head>
 <body class="bg-gray-800 text-white p-4">
     <div class="container mx-auto">
         <div>
-            <h1 class="text-2xl font-bold mb-4">EasyShed Dispatch - Product Checklist</h1>
+            <h1 class="text-2xl font-bold mb-4">Product Checklist</h1>
             <div class="flex gap-2 mb-4">
                 <input type="file" id="file-input" class="text-black p-2">
+                <input type="file" id="saved-report-input" class="text-black p-2">
             </div>
             <div class="flex gap-2 mb-4">
                 <select id="mode-filter" class="border p-2 text-black">
-                    <option value="check">Check Off</option>
-                    <option value="mark">Mark Off</option>
+                    <option value="scan">Scan Mode</option>
+                    <option value="mark">Mark Off Mode</option>
                 </select>
-                <div class="search-wrapper">
-                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path d="M10 2a8 8 0 0 1 6.32 12.906l5.387 5.387-1.414 1.414-5.387-5.387A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/>
-                    </svg>
-                    <input type="text" id="scan-input" class="border p-4 w-full text-black search-input" placeholder="Scan product or SO number..." autofocus>
-                </div>
-                <select id="filter-status" class="border p-2 text-black">
-                    <option value="all">Display All</option>
-                    <option value="not-marked">Not Marked</option>
-                    <option value="marked">Marked</option>
-                </select>
-                <button id="reload-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 hidden">Reload</button>
+                <input type="text" id="scan-input" class="border p-4 w-full text-black" placeholder="Scan product or SO number..." autofocus>
             </div>
             <div id="unknown-scan" class="unknown-scan hidden">Unknown Scan</div>
             <div class="overflow-x-auto">
@@ -188,15 +121,15 @@
         document.addEventListener("DOMContentLoaded", () => {
             const scanInput = document.getElementById("scan-input");
             const fileInput = document.getElementById("file-input");
+            const savedReportInput = document.getElementById("saved-report-input");
             const downloadReportButton = document.getElementById("download-report-button");
             const unknownScanDiv = document.getElementById("unknown-scan");
             const runCompleteDiv = document.getElementById("run-complete");
             const previewTable = document.getElementById("preview-table");
             const zoomInButton = document.getElementById("zoom-in");
             const zoomOutButton = document.getElementById("zoom-out");
+            const runFilter = document.getElementById("run-filter");
             const modeFilter = document.getElementById("mode-filter");
-            const reloadButton = document.getElementById("reload-button");
-            const filterStatus = document.getElementById("filter-status");
 
             // Load data from local storage
             loadDataFromLocalStorage();
@@ -204,9 +137,12 @@
             // Handle file input change
             fileInput.addEventListener("change", handleFileUpload);
 
+            // Handle saved report file input change
+            savedReportInput.addEventListener("change", handleSavedReportUpload);
+
             // Handle scan input
-            scanInput.addEventListener("keypress", (event) => {
-                if (event.key === 'Enter') {
+            scanInput.addEventListener("input", () => {
+                if (scanInput.value.length === 11) {
                     processScanInput(scanInput.value.trim());
                     scanInput.value = "";
                 }
@@ -226,23 +162,6 @@
 
             // Handle mode filter change
             modeFilter.addEventListener("change", () => {
-                if (modeFilter.value === "mark") {
-                    reloadButton.classList.remove("hidden");
-                } else {
-                    reloadButton.classList.add("hidden");
-                }
-                displayPreviewData(previewData);
-            });
-
-            // Handle reload button click
-            reloadButton.addEventListener("click", () => {
-                displayPreviewData(allPreviewData);
-                scanInput.value = "";
-                scanInput.focus();
-            });
-
-            // Handle filter status change
-            filterStatus.addEventListener("change", () => {
                 displayPreviewData(previewData);
             });
 
@@ -263,24 +182,25 @@
                 if (scannedCode) {
                     let found = false;
                     unknownScanDiv.classList.add("hidden");
-
                     previewData.forEach((row, index) => {
                         if (row.productNumbers.includes(scannedCode)) {
-                            row.scannedNumbers.add(scannedCode);
-                            found = true;
-
-                            if (row.scannedNumbers.size === row.productNumbers.length) {
-                                const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                                if (modeFilter.value === "check") {
+                            if (modeFilter.value === "scan") {
+                                row.scannedNumbers.add(scannedCode);
+                                if (row.scannedNumbers.size === row.productNumbers.length) {
+                                    const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                                    rowElement.children[10].classList.add("complete");
+                                    rowElement.children[11].classList.add("complete");
+                                    rowElement.children[12].classList.add("complete");
                                     rowElement.querySelector('.status').innerHTML = '✅';
-                                    rowElement.children[15].classList.add("complete");
-                                } else if (modeFilter.value === "mark") {
-                                    row.markedOff = true;
-                                    rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-                                    rowElement.children[16].classList.add("marked-off");
-                                    displayScannedConsignment(row);
                                 }
+                            } else if (modeFilter.value === "mark") {
+                                row.markedOff = true;
+                                const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                                rowElement.children[17].classList.add("marked-off");
+                                rowElement.querySelector('.marked-off-status').innerHTML = '✅';
+                                displayPreviewData(previewData);
                             }
+                            found = true;
                             scannedProducts++;
                         }
                     });
@@ -320,6 +240,8 @@
                     const sheet = workbook.Sheets[sheetName];
                     const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+                    console.log(sheetData);  // Debugging: Log the parsed sheet data
+
                     products = [];
                     consignments = {};
                     totalProducts = 0;
@@ -345,7 +267,7 @@
                         const runLetter = row[0];
                         const dropNumber = row[1];
                         const location = row[2];
-                        const date = row[3]; // Read the date as text
+                        const date = formatDate(row[3]); // Format the date
                         const soNumber = row[4];
                         const name = row[5];
                         const address = row[6];
@@ -526,6 +448,8 @@
                     const sheet = workbook.Sheets[sheetName];
                     const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+                    console.log(sheetData); // Debugging: Log the parsed sheet data
+
                     sheetData.forEach((row, index) => {
                         if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
 
@@ -669,8 +593,7 @@
                 previewTbody.innerHTML = ""; // Clear existing preview data
 
                 data.forEach((row, index) => {
-                    if (filterStatus.value === "not-marked" && row.markedOff) return;
-                    if (filterStatus.value === "marked" && !row.markedOff) return;
+                    if (modeFilter.value === "mark" && !row.markedOff) return;
 
                     const rowElement = document.createElement("tr");
                     rowElement.setAttribute('data-index', index);
@@ -709,35 +632,6 @@
                 document.querySelectorAll('.notes-input').forEach(input => {
                     input.addEventListener('input', handleNotesInput);
                 });
-            }
-
-            function displayScannedConsignment(row) {
-                const previewTbody = previewTable.querySelector("tbody");
-                previewTbody.innerHTML = ""; // Clear existing preview data
-
-                const rowElement = document.createElement("tr");
-                rowElement.innerHTML = `
-                    <td class="run-letter">${row.runLetter}</td>
-                    <td>${row.dropNumber}</td>
-                    <td>${row.location}</td>
-                    <td>${row.date}</td>
-                    <td>${row.soNumber}</td>
-                    <td>${row.name}</td>
-                    <td>${row.address}</td>
-                    <td>${row.suburb}</td>
-                    <td>${row.postcode}</td>
-                    <td>${row.phoneNumber}</td>
-                    <td>${row.flatpack}</td>
-                    <td>${row.channelBoxCount}</td>
-                    <td>${row.flooringBoxCount}</td>
-                    <td>${row.weight}</td>
-                    <td>${row.description}</td>
-                    <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-                    <td class="marked-off-status">✅</td>
-                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${row.index}" value="${row.notes}" /></td>
-                `;
-                rowElement.children[17].classList.add("marked-off");
-                previewTbody.appendChild(rowElement);
             }
 
             function filterByRun() {
