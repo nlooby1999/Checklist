@@ -1,14 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
-    const savedReportInput = document.getElementById("saved-report-input");
     const downloadReportButton = document.getElementById("download-report-button");
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
     const zoomInButton = document.getElementById("zoom-in");
     const zoomOutButton = document.getElementById("zoom-out");
-    const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
     const reloadButton = document.getElementById("reload-button");
     const filterStatus = document.getElementById("filter-status");
@@ -19,15 +17,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle file input change
     fileInput.addEventListener("change", handleFileUpload);
 
-    // Handle saved report file input change
-    savedReportInput.addEventListener("change", handleSavedReportUpload);
-
     // Handle scan input
-    scanInput.addEventListener("input", () => {
-        if (scanInput.value.length === 11) {
+    scanInput.addEventListener("keypress", (event) => {
+        if (event.key === 'Enter') {
             processScanInput(scanInput.value.trim());
             scanInput.value = "";
-            scanInput.focus();
         }
     });
 
@@ -82,10 +76,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scannedCode) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
+
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
                     row.scannedNumbers.add(scannedCode);
                     found = true;
+
                     if (row.scannedNumbers.size === row.productNumbers.length) {
                         const rowElement = document.querySelector(`tr[data-index="${index}"]`);
                         if (modeFilter.value === "check") {
@@ -697,3 +693,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
+</script>
+</body>
+</html>
