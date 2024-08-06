@@ -1,3 +1,11 @@
+ let products = [];
+        let consignments = {};
+        let totalProducts = 0;
+        let scannedProducts = 0;
+        let previewData = [];
+        let runSummaries = [];
+        let allPreviewData = [];
+        let zoomLevel = 1;
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
