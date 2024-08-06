@@ -88,8 +88,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             rowElement.querySelector('.status').innerHTML = '✅';
                             rowElement.children[15].classList.add("complete");
                         } else if (modeFilter.value === "mark") {
+                            row.markedOff = true;
                             rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                             rowElement.children[16].classList.add("marked-off");
+                            displayScannedConsignment(row);
                         }
                     }
                     scannedProducts++;
@@ -693,6 +695,3 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
-</script>
-</body>
-</html>
