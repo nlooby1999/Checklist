@@ -5,6 +5,7 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
+let zoomLevel = 1;
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
@@ -69,9 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         row.scannedNumbers.add(scannedCode);
                         if (row.scannedNumbers.size === row.productNumbers.length) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                            rowElement.children[6].classList.add("complete");
                             rowElement.children[7].classList.add("complete");
                             rowElement.children[8].classList.add("complete");
-                            rowElement.children[9].classList.add("complete");
                             rowElement.querySelector('.status').innerHTML = '✅';
                         }
                     } else if (modeFilter.value === "mark") {
@@ -142,14 +143,13 @@ document.addEventListener("DOMContentLoaded", () => {
             let runSet = new Set();
 
             sheetData.forEach((row, index) => {
-                if (row.length < 12 || !row[4]) return; // Skip rows with insufficient data or no SO Number
+                if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
 
                 const runLetter = row[0];
                 const dropNumber = row[1];
                 const location = row[2];
                 const soNumber = row[4];
                 const name = row[5];
-                const address = row[6];
                 const suburb = row[7];
                 const flatpack = row[10] || 0; // Column K
                 const channelBoxCount = row[11] || 0; // Column L
@@ -197,7 +197,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     location,
                     soNumber,
                     name,
-                    address,
                     suburb,
                     flatpack,
                     channelBoxCount,
@@ -250,7 +249,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${location}</td>
                     <td>${soNumber}</td>
                     <td>${name}</td>
-                    <td>${address}</td>
                     <td>${suburb}</td>
                     <td>${flatpack}</td>
                     <td>${channelBoxCount}</td>
@@ -333,7 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         previewRow.markedOff = markedOff;
                         if (markedOff) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[13].classList.add("marked-off");
+                            rowElement.children[12].classList.add("marked-off");
                             rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                         }
 
@@ -456,7 +454,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${row.location}</td>
                 <td>${row.soNumber}</td>
                 <td>${row.name}</td>
-                <td>${row.address}</td>
                 <td>${row.suburb}</td>
                 <td>${row.flatpack}</td>
                 <td>${row.channelBoxCount}</td>
@@ -467,12 +464,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
             `;
             if (row.scannedNumbers.size === row.productNumbers.length) {
+                rowElement.children[6].classList.add("complete");
                 rowElement.children[7].classList.add("complete");
                 rowElement.children[8].classList.add("complete");
-                rowElement.children[9].classList.add("complete");
             }
             if (row.markedOff) {
-                rowElement.children[13].classList.add("marked-off");
+                rowElement.children[12].classList.add("marked-off");
             }
             previewTbody.appendChild(rowElement);
         });
@@ -495,7 +492,6 @@ document.addEventListener("DOMContentLoaded", () => {
             Location: row.location,
             'SO Number': row.soNumber,
             Name: row.name,
-            Address: row.address,
             Suburb: row.suburb,
             Flatpacks: row.flatpack,
             Channel: row.channelBoxCount,
@@ -582,7 +578,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${row.location}</td>
                     <td>${row.soNumber}</td>
                     <td>${row.name}</td>
-                    <td>${row.address}</td>
                     <td>${row.suburb}</td>
                     <td>${row.flatpack}</td>
                     <td>${row.channelBoxCount}</td>
@@ -593,12 +588,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
                 `;
                 if (row.scannedNumbers.size === row.productNumbers.length) {
+                    rowElement.children[6].classList.add("complete");
                     rowElement.children[7].classList.add("complete");
                     rowElement.children[8].classList.add("complete");
-                    rowElement.children[9].classList.add("complete");
                 }
                 if (row.markedOff) {
-                    rowElement.children[13].classList.add("marked-off");
+                    rowElement.children[12].classList.add("marked-off");
                 }
                 previewTbody.appendChild(rowElement);
             });
