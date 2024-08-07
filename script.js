@@ -63,15 +63,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Zoom in and zoom out functionality
     zoomInButton.addEventListener("click", () => {
         zoomLevel += 0.1;
-        previewTable.style.transform = `scale(${zoomLevel})`;
+        adjustZoomLevel();
     });
 
     zoomOutButton.addEventListener("click", () => {
         if (zoomLevel > 0.2) {
             zoomLevel -= 0.1;
-            previewTable.style.transform = `scale(${zoomLevel})`;
+            adjustZoomLevel();
         }
     });
+
+    function adjustZoomLevel() {
+        previewTable.style.transform = `scale(${zoomLevel})`;
+        const tableWidth = previewTable.offsetWidth * zoomLevel;
+        const containerWidth = document.body.offsetWidth;
+        if (tableWidth > containerWidth) {
+            zoomOutButton.click();
+        }
+    }
 
     function processScanInput(scannedCode) {
         if (scannedCode) {
@@ -155,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
             rowElement.children[17].classList.add("marked-off");
         }
         previewTbody.appendChild(rowElement);
+        adjustZoomLevel();
     }
 
     function handleFileUpload(event) {
@@ -360,6 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Display preview data
             displayPreviewData(previewData);
+            adjustZoomLevel();
         };
 
         reader.readAsArrayBuffer(file);
@@ -558,6 +569,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll('.notes-input').forEach(input => {
             input.addEventListener('input', handleNotesInput);
         });
+
+        adjustZoomLevel();
     }
 
     function filterByRun() {
