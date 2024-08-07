@@ -27,9 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", handleFileUpload);
 
     // Handle scan input
-    scanInput.addEventListener("input", () => {
-        if (scanInput.value.length >= 12) { // Adjust length as per full barcode length
-            processScanInput(scanInput.value.trim());
+    scanInput.addEventListener("input", (event) => {
+        const scannedCode = event.target.value.trim();
+        if (scannedCode.length >= 12) { // Adjust length as per full barcode length
+            processScanInput(scannedCode);
             scanInput.value = "";
         }
     });
