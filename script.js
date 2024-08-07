@@ -158,10 +158,9 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>${row.description}</td>
             <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
             <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-            <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
         `;
         if (row.markedOff) {
-            rowElement.children[17].classList.add("marked-off");
+            rowElement.children[16].classList.add("marked-off");
         }
         previewTbody.appendChild(rowElement);
         adjustZoomLevel();
@@ -270,8 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     description,
                     productNumbers,
                     scannedNumbers: new Set(),
-                    markedOff: false,
-                    notes: ''
+                    markedOff: false
                 };
 
                 previewData.push(rowData);
@@ -291,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const summaryRow = document.createElement("tr");
                     summaryRow.classList.add("run-summary");
                     summaryRow.innerHTML = `
-                        <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                        <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                     `;
                     previewTbody.appendChild(summaryRow);
                     currentRunTotalWeight = 0;
@@ -327,7 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${description}</td>
                     <td class="status"></td>
                     <td class="marked-off-status"></td>
-                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
                 `;
                 previewTbody.appendChild(rowElement);
             });
@@ -346,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
             }
@@ -358,11 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 option.value = run;
                 option.textContent = run;
                 runFilter.appendChild(option);
-            });
-
-            // Add event listeners to notes inputs
-            document.querySelectorAll('.notes-input').forEach(input => {
-                input.addEventListener('input', handleNotesInput);
             });
 
             // Save data to local storage
@@ -398,12 +390,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const flooringBoxCount = row[12] || 0;
                 const status = row[15];
                 const markedOff = row[16] === 'true';
-                const notes = row[17];
 
                 previewData.forEach(previewRow => {
                     if (previewRow.soNumber === soNumber) {
-                        previewRow.notes = notes;
-
                         if (status === 'Complete') {
                             previewRow.scannedNumbers = new Set(previewRow.productNumbers);
                         }
@@ -411,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         previewRow.markedOff = markedOff;
                         if (markedOff) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[17].classList.add("marked-off");
+                            rowElement.children[16].classList.add("marked-off");
                             rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                         }
 
@@ -434,12 +423,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function formatDate(dateValue) {
         const date = new Date(dateValue);
         return isNaN(date.getTime()) ? dateValue : date.toLocaleDateString();
-    }
-
-    function handleNotesInput(event) {
-        const index = event.target.getAttribute('data-index');
-        previewData[index].notes = event.target.value;
-        saveDataToLocalStorage();
     }
 
     function checkRunCompletion() {
@@ -486,7 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const summaryRow = document.createElement("tr");
                 summaryRow.classList.add("run-summary");
                 summaryRow.innerHTML = `
-                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                    <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
                 currentRunTotalWeight = 0;
@@ -518,7 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const summaryRow = document.createElement("tr");
             summaryRow.classList.add("run-summary");
             summaryRow.innerHTML = `
-                <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+                <td colspan="17"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
             `;
             previewTbody.appendChild(summaryRow);
         }
@@ -552,7 +535,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${row.description}</td>
                 <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
                 <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-                <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
             `;
             if (row.scannedNumbers.size === row.productNumbers.length) {
                 rowElement.children[10].classList.add("complete");
@@ -560,14 +542,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 rowElement.children[12].classList.add("complete");
             }
             if (row.markedOff) {
-                rowElement.children[17].classList.add("marked-off");
+                rowElement.children[16].classList.add("marked-off");
             }
             previewTbody.appendChild(rowElement);
-        });
-
-        // Add event listeners to notes inputs
-        document.querySelectorAll('.notes-input').forEach(input => {
-            input.addEventListener('input', handleNotesInput);
         });
 
         adjustZoomLevel();
@@ -601,8 +578,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Weight: row.weight,
             Description: row.description,
             Status: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
-            MarkedOff: row.markedOff ? 'true' : 'false',
-            Notes: row.notes
+            MarkedOff: row.markedOff ? 'true' : 'false'
         }));
 
         const summaryData = runSummaries.map(summary => ({
@@ -693,7 +669,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${row.description}</td>
                     <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
                     <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
                 `;
                 if (row.scannedNumbers.size === row.productNumbers.length) {
                     rowElement.children[10].classList.add("complete");
@@ -701,14 +676,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     rowElement.children[12].classList.add("complete");
                 }
                 if (row.markedOff) {
-                    rowElement.children[17].classList.add("marked-off");
+                    rowElement.children[16].classList.add("marked-off");
                 }
                 previewTbody.appendChild(rowElement);
-            });
-
-            // Add event listeners to notes inputs
-            document.querySelectorAll('.notes-input').forEach(input => {
-                input.addEventListener('input', handleNotesInput);
             });
 
             checkRunCompletion();
