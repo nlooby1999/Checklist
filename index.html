@@ -24,6 +24,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 1rem; /* Increase font size */
         }
         th, td {
             white-space: nowrap;
@@ -34,17 +35,42 @@
         th {
             background-color: #f2f2f2;
         }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%; /* Make the checklist wider */
+        }
+        .top-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto mt-10">
-        <div class="flex flex-col space-y-4">
-            <input type="text" id="scan-input" class="p-2 border rounded" placeholder="Scan product code">
-            <input type="file" id="file-input" class="p-2 border rounded">
+        <div class="top-controls">
+            <input type="text" id="scan-input" class="p-2 border rounded mb-2" placeholder="Scan product code">
+            <input type="file" id="file-input" class="p-2 border rounded mb-2">
+            <select id="run-filter" class="p-2 border rounded mb-2">
+                <option value="all">All</option>
+            </select>
+            <select id="mode-filter" class="p-2 border rounded mb-2">
+                <option value="scan">Scan</option>
+                <option value="mark">Mark</option>
+            </select>
+        </div>
+        <div class="flex space-x-2 mb-4">
             <button id="download-report-button" class="p-2 bg-blue-500 text-white rounded">Download Report</button>
             <button id="remove-checklist-button" class="p-2 bg-red-500 text-white rounded">Remove Checklist</button>
-            <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
-            <div id="run-complete" class="hidden text-green-500">Run Complete</div>
+            <button id="zoom-in" class="p-2 bg-green-500 text-white rounded">Zoom In</button>
+            <button id="zoom-out" class="p-2 bg-yellow-500 text-white rounded">Zoom Out</button>
+        </div>
+        <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
+        <div id="run-complete" class="hidden text-green-500">Run Complete</div>
+        <div class="w-full overflow-x-auto">
             <table id="preview-table" class="min-w-full bg-white">
                 <thead>
                     <tr>
@@ -65,23 +91,11 @@
                         <th>Description</th>
                         <th>Status</th>
                         <th>Marked Off</th>
-                        <th>Notes</th>
                     </tr>
                 </thead>
                 <tbody>
                 </tbody>
             </table>
-            <div class="flex space-x-2">
-                <button id="zoom-in" class="p-2 bg-green-500 text-white rounded">Zoom In</button>
-                <button id="zoom-out" class="p-2 bg-yellow-500 text-white rounded">Zoom Out</button>
-            </div>
-            <select id="run-filter" class="p-2 border rounded">
-                <option value="all">All</option>
-            </select>
-            <select id="mode-filter" class="p-2 border rounded">
-                <option value="scan">Scan</option>
-                <option value="mark">Mark</option>
-            </select>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
