@@ -10,8 +10,8 @@ let zoomLevel = 1;
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
-    const savedReportInput = document.getElementById("saved-report-input");
     const downloadReportButton = document.getElementById("download-report-button");
+    const removeChecklistButton = document.getElementById("remove-checklist-button");
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
@@ -25,9 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle file input change
     fileInput.addEventListener("change", handleFileUpload);
-
-    // Handle saved report file input change
-    savedReportInput.addEventListener("change", handleSavedReportUpload);
 
     // Handle scan input
     scanInput.addEventListener("keypress", (event) => {
@@ -46,6 +43,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 downloadReport(reportName);
                 clearChecklistData();
             }
+        }
+    });
+
+    // Handle remove checklist button click
+    removeChecklistButton.addEventListener("click", () => {
+        const confirmRemove = confirm("Are you sure you want to remove the checklist?");
+        if (confirmRemove) {
+            clearChecklistData();
+            alert("Checklist has been removed.");
         }
     });
 
@@ -71,6 +77,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scannedCode) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
+
+            if (modeFilter.value === "mark") {
+                previewTable.querySelector("tbody").innerHTML = ""; // Clear the table
+            }
+
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
                     if (modeFilter.value === "scan") {
@@ -84,9 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     } else if (modeFilter.value === "mark") {
                         row.markedOff = true;
-                        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                        rowElement.children[17].classList.add("marked-off");
-                        rowElement.querySelector('.marked-off-status').innerHTML = '✅';
+                        displayScannedRow(row, index);
                     }
                     found = true;
                     scannedProducts++;
@@ -115,6 +124,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 runCompleteDiv.classList.remove("hidden");
             }
         }
+    }
+
+    function displayScannedRow(row, index) {
+        const previewTbody = previewTable.querySelector("tbody");
+        const rowElement = document.createElement("tr");
+        rowElement.setAttribute('data-index', index);
+        rowElement.innerHTML = `
+            <td class="run-letter">${row.runLetter}</td>
+            <td>${row.dropNumber}</td>
+            <td>${row.location}</td>
+            <td>${row.date}</td>
+            <td>${row.soNumber}</td>
+            <td>${row.name}</td>
+            <td>${row.address}</td>
+            <td>${row.suburb}</td>
+            <td>${row.postcode}</td>
+            <td>${row.phoneNumber}</td>
+            <td>${row.flatpack}</td>
+            <td>${row.channelBoxCount}</td>
+            <td>${row.flooringBoxCount}</td>
+            <td>${row.weight}</td>
+            <td>${row.description}</td>
+            <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+            <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
+            <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
+        `;
+        if (row.markedOff) {
+            rowElement.children[17].classList.add("marked-off");
+        }
+        previewTbody.appendChild(rowElement);
     }
 
     function handleFileUpload(event) {
@@ -662,4 +701,3 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
-
