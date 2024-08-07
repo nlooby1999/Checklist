@@ -15,8 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
-    const zoomInButton = document.getElementById("zoom-in");
-    const zoomOutButton = document.getElementById("zoom-out");
     const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
 
@@ -60,28 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modeFilter.addEventListener("change", () => {
         displayPreviewData(previewData);
     });
-
-    // Zoom in and zoom out functionality
-    zoomInButton.addEventListener("click", () => {
-        zoomLevel += 0.1;
-        adjustZoomLevel();
-    });
-
-    zoomOutButton.addEventListener("click", () => {
-        if (zoomLevel > 0.2) {
-            zoomLevel -= 0.1;
-            adjustZoomLevel();
-        }
-    });
-
-    function adjustZoomLevel() {
-        previewTable.style.transform = `scale(${zoomLevel})`;
-        const tableWidth = previewTable.offsetWidth * zoomLevel;
-        const containerWidth = document.body.offsetWidth;
-        if (tableWidth > containerWidth) {
-            zoomOutButton.click();
-        }
-    }
 
     function processScanInput(scannedCode) {
         if (scannedCode) {
@@ -330,7 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Display preview data
             displayPreviewData(previewData);
-            adjustZoomLevel();
         };
 
         reader.readAsArrayBuffer(file);
@@ -514,8 +489,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             previewTbody.appendChild(rowElement);
         });
-
-        adjustZoomLevel();
     }
 
     function filterByRun() {
