@@ -27,8 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", handleFileUpload);
 
     // Handle scan input
-    scanInput.addEventListener("keypress", (event) => {
-        if (event.key === 'Enter') {
+    scanInput.addEventListener("input", () => {
+        if (scanInput.value.length >= 12) { // Adjust length as per full barcode length
             processScanInput(scanInput.value.trim());
             scanInput.value = "";
         }
@@ -100,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     } else if (modeFilter.value === "mark") {
                         row.markedOff = true;
-                        displayScannedRow(row, index);
+                        displayPreviewData([row]);
                     }
                     found = true;
                     scannedProducts++;
@@ -129,41 +129,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 runCompleteDiv.classList.remove("hidden");
             }
 
-            // Update the display based on the mode
-            if (modeFilter.value === "mark") {
-                displayPreviewData(previewData.filter(row => row.markedOff));
-            }
+            scanInput.focus(); // Auto focus back on the search bar
         }
-    }
-
-    function displayScannedRow(row, index) {
-        const previewTbody = previewTable.querySelector("tbody");
-        const rowElement = document.createElement("tr");
-        rowElement.setAttribute('data-index', index);
-        rowElement.innerHTML = `
-            <td class="run-letter">${row.runLetter}</td>
-            <td>${row.dropNumber}</td>
-            <td>${row.location}</td>
-            <td>${row.date}</td>
-            <td>${row.soNumber}</td>
-            <td>${row.name}</td>
-            <td>${row.address}</td>
-            <td>${row.suburb}</td>
-            <td>${row.postcode}</td>
-            <td>${row.phoneNumber}</td>
-            <td>${row.flatpack}</td>
-            <td>${row.channelBoxCount}</td>
-            <td>${row.flooringBoxCount}</td>
-            <td>${row.weight}</td>
-            <td>${row.description}</td>
-            <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-            <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-        `;
-        if (row.markedOff) {
-            rowElement.children[16].classList.add("marked-off");
-        }
-        previewTbody.appendChild(rowElement);
-        adjustZoomLevel();
     }
 
     function handleFileUpload(event) {
