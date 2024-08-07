@@ -78,10 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let found = false;
             unknownScanDiv.classList.add("hidden");
 
-            if (modeFilter.value === "mark") {
-                previewTable.querySelector("tbody").innerHTML = ""; // Clear the table
-            }
-
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
                     if (modeFilter.value === "scan") {
@@ -122,6 +118,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (scannedProducts === totalProducts) {
                 runCompleteDiv.classList.remove("hidden");
+            }
+
+            // Update the display based on the mode
+            if (modeFilter.value === "mark") {
+                displayPreviewData(previewData.filter(row => row.markedOff));
             }
         }
     }
