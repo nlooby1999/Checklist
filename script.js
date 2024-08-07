@@ -5,7 +5,7 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
-let zoomLevel = 1;
+let barcodeLength = 10; // Assuming the barcode length is 10 characters
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
@@ -25,8 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", handleFileUpload);
 
     // Handle scan input
-    scanInput.addEventListener("keypress", (event) => {
-        if (event.key === 'Enter') {
+    scanInput.addEventListener("input", (event) => {
+        if (scanInput.value.length === barcodeLength) {
             const scannedCode = scanInput.value.trim();
             processScanInput(scannedCode);
             scanInput.value = "";
@@ -136,7 +136,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const previewTbody = previewTable.querySelector("tbody");
             previewTbody.innerHTML = ""; // Clear any existing preview data
             let currentRun = '';
-            let currentRunTotalWeight = 0;
             let currentRunTotalFlatpacks = 0;
             let currentRunTotalChannels = 0;
             let currentRunTotalFlooring = 0;
