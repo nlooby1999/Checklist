@@ -3,108 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Checklist</title>
+    <title>Consignment Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        .container {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
-        .status-column {
-            width: 200px;
-        }
-        .run-complete {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: green;
-        }
-        .preview-table {
-            width: 100%;
-            margin-bottom: 1rem;
-            overflow-x: auto;
-        }
-        .preview-table th, .preview-table td {
-            padding: 0.5rem;
-            text-align: left;
-            word-break: break-word;
-        }
-        .preview-table th {
-            background-color: #333;
-            color: white;
-        }
-        .preview-table td {
-            background-color: #555;
-            color: white;
+        .hidden {
+            display: none;
         }
         .complete {
-            text-decoration: line-through;
-            color: #00FF00; /* Green color */
+            background-color: #d4edda;
         }
         .marked-off {
-            background-color: #FFA500; /* Orange color */
+            background-color: #cce5ff;
         }
-        .unknown-scan {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: red;
+        .text-green-500 {
+            color: #38a169;
+        }
+        .text-red-500 {
+            color: #e53e3e;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            white-space: nowrap;
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
-<body class="bg-gray-800 text-white p-4">
-    <div class="container mx-auto">
-        <div>
-            <h1 class="text-2xl font-bold mb-4">Product Checklist</h1>
-            <div class="flex gap-2 mb-4">
-                <input type="file" id="file-input" class="text-white p-2">
+<body class="bg-gray-100">
+    <div class="container mx-auto mt-10">
+        <div class="flex flex-col space-y-4">
+            <input type="text" id="scan-input" class="p-2 border rounded" placeholder="Scan product code">
+            <input type="file" id="file-input" class="p-2 border rounded">
+            <button id="download-report-button" class="p-2 bg-blue-500 text-white rounded">Download Report</button>
+            <button id="remove-checklist-button" class="p-2 bg-red-500 text-white rounded">Remove Checklist</button>
+            <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
+            <div id="run-complete" class="hidden text-green-500">Run Complete</div>
+            <table id="preview-table" class="min-w-full bg-white">
+                <thead>
+                    <tr>
+                        <th>Run</th>
+                        <th>Drop</th>
+                        <th>Location</th>
+                        <th>Date</th>
+                        <th>SO Number</th>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>Suburb</th>
+                        <th>Postcode</th>
+                        <th>Phone Number</th>
+                        <th>Flatpacks</th>
+                        <th>Channel</th>
+                        <th>Flooring</th>
+                        <th>Weight</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Marked Off</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <div class="flex space-x-2">
+                <button id="zoom-in" class="p-2 bg-green-500 text-white rounded">Zoom In</button>
+                <button id="zoom-out" class="p-2 bg-yellow-500 text-white rounded">Zoom Out</button>
             </div>
-            <div class="flex gap-2 mb-4">
-                <select id="mode-filter" class="border p-2 text-black">
-                    <option value="scan">Scan Mode</option>
-                    <option value="mark">Mark Off Mode</option>
-                </select>
-                <input type="text" id="scan-input" class="border p-4 w-full text-black" placeholder="Scan product or SO number..." autofocus>
-            </div>
-            <div id="unknown-scan" class="unknown-scan hidden">Unknown Scan</div>
-            <div class="overflow-x-auto">
-                <table id="preview-table" class="preview-table">
-                    <thead>
-                        <tr>
-                            <th>Run</th>
-                            <th>Drop</th>
-                            <th>Loc</th>
-                            <th>Date</th>
-                            <th>SO Num</th>
-                            <th>Name</th>
-                            <th>Addr</th>
-                            <th>Suburb</th>
-                            <th>PC</th>
-                            <th>Phone</th>
-                            <th>FP</th>
-                            <th>CB</th>
-                            <th>FB</th>
-                            <th>Wt</th>
-                            <th>Desc</th>
-                            <th>Status</th>
-                            <th>MO</th>
-                            <th>Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Preview data will be dynamically added here -->
-                    </tbody>
-                </table>
-            </div>
-            <div class="flex flex-wrap gap-2 mt-4">
-                <button id="download-report-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4">Download Report</button>
-                <button id="remove-checklist-button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4">Remove Checklist</button>
-                <button id="zoom-in" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom In</button>
-                <button id="zoom-out" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom Out</button>
-            </div>
+            <select id="run-filter" class="p-2 border rounded">
+                <option value="all">All</option>
+            </select>
+            <select id="mode-filter" class="p-2 border rounded">
+                <option value="scan">Scan</option>
+                <option value="mark">Mark</option>
+            </select>
         </div>
-    </div>
-    <div id="run-complete" class="run-complete text-center hidden">
-        Run Complete
     </div>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="script.js"></script>
