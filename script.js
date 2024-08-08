@@ -471,8 +471,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const reportData = previewData.map(row => ({
             Run: row.runLetter,
             Drop: row.dropNumber,
-            Status: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
-            'Marked Off': row.markedOff ? 'true' : 'false',
+            Check: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
+            Marked: row.markedOff ? 'true' : 'false',
             Location: row.location,
             'SO Number': row.soNumber,
             Name: row.name,
