@@ -5,10 +5,11 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
-let barcodeLength = 10; // Assuming the barcode length is 10 characters
+let barcodeLength = 11; // Assuming the barcode length is 11 characters
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
+    const enterButton = document.getElementById("enter-button");
     const fileInput = document.getElementById("file-input");
     const downloadReportButton = document.getElementById("download-report-button");
     const removeChecklistButton = document.getElementById("remove-checklist-button");
@@ -31,6 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
             processScanInput(scannedCode);
             scanInput.value = "";
         }
+    });
+
+    // Handle Enter button click
+    enterButton.addEventListener("click", () => {
+        const scannedCode = scanInput.value.trim();
+        processScanInput(scannedCode);
+        scanInput.value = "";
     });
 
     // Handle download report button click
@@ -70,9 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         row.scannedNumbers.add(scannedCode);
                         if (row.scannedNumbers.size === row.productNumbers.length) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[5].classList.add("complete");
-                            rowElement.children[6].classList.add("complete");
-                            rowElement.children[7].classList.add("complete");
+                            rowElement.children[2].classList.add("complete");
+                            rowElement.children[3].classList.add("complete");
                             rowElement.querySelector('.status').innerHTML = '✅';
                         }
                     } else if (modeFilter.value === "mark") {
@@ -237,6 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 rowElement.innerHTML = `
                     <td class="run-letter">${runLetter}</td>
                     <td>${dropNumber}</td>
+                    <td class="status"></td>
+                    <td class="marked-off-status"></td>
                     <td>${location}</td>
                     <td>${soNumber}</td>
                     <td>${name}</td>
@@ -244,8 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${channelBoxCount}</td>
                     <td>${flooringBoxCount}</td>
                     <td>${description}</td>
-                    <td class="status"></td>
-                    <td class="marked-off-status"></td>
                 `;
                 previewTbody.appendChild(rowElement);
             });
@@ -319,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         previewRow.markedOff = markedOff;
                         if (markedOff) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[10].classList.add("marked-off");
+                            rowElement.children[2].classList.add("marked-off");
                             rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                         }
 
@@ -429,6 +436,8 @@ document.addEventListener("DOMContentLoaded", () => {
             rowElement.innerHTML = `
                 <td class="run-letter">${row.runLetter}</td>
                 <td>${row.dropNumber}</td>
+                <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+                <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
                 <td>${row.location}</td>
                 <td>${row.soNumber}</td>
                 <td>${row.name}</td>
@@ -436,16 +445,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${row.channelBoxCount}</td>
                 <td>${row.flooringBoxCount}</td>
                 <td>${row.description}</td>
-                <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-                <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
             `;
             if (row.scannedNumbers.size === row.productNumbers.length) {
-                rowElement.children[5].classList.add("complete");
-                rowElement.children[6].classList.add("complete");
-                rowElement.children[7].classList.add("complete");
+                rowElement.children[2].classList.add("complete");
+                rowElement.children[3].classList.add("complete");
             }
             if (row.markedOff) {
-                rowElement.children[10].classList.add("marked-off");
+                rowElement.children[3].classList.add("marked-off");
             }
             previewTbody.appendChild(rowElement);
         });
@@ -465,15 +471,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const reportData = previewData.map(row => ({
             Run: row.runLetter,
             Drop: row.dropNumber,
+            Status: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
+            'Marked Off': row.markedOff ? 'true' : 'false',
             Location: row.location,
             'SO Number': row.soNumber,
             Name: row.name,
             Flatpacks: row.flatpack,
             Channel: row.channelBoxCount,
             Flooring: row.flooringBoxCount,
-            Description: row.description,
-            Status: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
-            MarkedOff: row.markedOff ? 'true' : 'false'
+            Description: row.description
         }));
 
         const summaryData = runSummaries.map(summary => ({
@@ -548,6 +554,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 rowElement.innerHTML = `
                     <td class="run-letter">${row.runLetter}</td>
                     <td>${row.dropNumber}</td>
+                    <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
+                    <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
                     <td>${row.location}</td>
                     <td>${row.soNumber}</td>
                     <td>${row.name}</td>
@@ -555,16 +563,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${row.channelBoxCount}</td>
                     <td>${row.flooringBoxCount}</td>
                     <td>${row.description}</td>
-                    <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-                    <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
                 `;
                 if (row.scannedNumbers.size === row.productNumbers.length) {
-                    rowElement.children[5].classList.add("complete");
-                    rowElement.children[6].classList.add("complete");
-                    rowElement.children[7].classList.add("complete");
+                    rowElement.children[2].classList.add("complete");
+                    rowElement.children[3].classList.add("complete");
                 }
                 if (row.markedOff) {
-                    rowElement.children[10].classList.add("marked-off");
+                    rowElement.children[3].classList.add("marked-off");
                 }
                 previewTbody.appendChild(rowElement);
             });
