@@ -5,7 +5,7 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
-let barcodeLength = 12; // Updated to 12 characters
+let barcodeLength = 11; // Updated to 11 characters
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const scannedCode = scanInput.value.trim();
             processScanInput(scannedCode);
             scanInput.value = "";
+            scanInput.focus(); // Auto focus back on the search bar
         }
     });
 
@@ -112,8 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (scannedProducts === totalProducts) {
                 runCompleteDiv.classList.remove("hidden");
             }
-
-            scanInput.focus(); // Auto focus back on the search bar
         }
     }
 
