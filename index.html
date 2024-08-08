@@ -6,6 +6,50 @@
     <title>Consignment Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
+        body {
+            background-color: #f8f9fa; /* Light grey background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .top-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .top-controls > * {
+            margin-right: 10px;
+        }
+        .top-controls input,
+        .top-controls select,
+        .top-controls button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .top-controls button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .top-controls button:hover {
+            background-color: #0056b3;
+        }
+        .top-controls input[type="file"] {
+            border: none;
+        }
         .hidden {
             display: none;
         }
@@ -24,59 +68,72 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 1rem; /* Increase font size */
+            margin-top: 20px;
+            font-size: 1rem; /* Adjust font size */
         }
         th, td {
             white-space: nowrap;
             border: 1px solid #ddd;
-            padding: 8px;
+            padding: 12px;
             text-align: left;
         }
         th {
             background-color: #f2f2f2;
+            font-weight: 600;
         }
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 90%; /* Make the checklist wider */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-        .top-controls {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
         }
-        .top-controls > * {
-            margin-right: 10px; /* Add spacing between elements */
+        .btn-primary:hover {
+            background-color: #0056b3;
         }
-        body {
-            background-color: #d3d3d3; /* Light grey background */
-            background-repeat: no-repeat;
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto mt-10">
+<body>
+    <div class="container">
         <div class="top-controls">
-            <input type="text" id="scan-input" class="p-2 border rounded" placeholder="Scan product code">
-            <button id="enter-button" class="p-2 bg-blue-500 text-white rounded">Enter</button>
-            <input type="file" id="file-input" class="p-2 border rounded">
-            <select id="run-filter" class="p-2 border rounded">
+            <input type="text" id="scan-input" placeholder="Scan product code">
+            <button id="enter-button" class="btn btn-primary">Enter</button>
+            <input type="file" id="file-input">
+            <select id="run-filter">
                 <option value="all">All</option>
             </select>
-            <select id="mode-filter" class="p-2 border rounded">
+            <select id="mode-filter">
                 <option value="scan">Scan</option>
                 <option value="mark">Mark</option>
             </select>
         </div>
         <div class="flex space-x-2 mb-4">
-            <button id="download-report-button" class="p-2 bg-blue-500 text-white rounded">Download Report</button>
-            <button id="remove-checklist-button" class="p-2 bg-red-500 text-white rounded">Remove Checklist</button>
+            <button id="download-report-button" class="btn btn-primary">Download Report</button>
+            <button id="remove-checklist-button" class="btn btn-danger">Remove Checklist</button>
         </div>
         <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
         <div id="run-complete" class="hidden text-green-500">Run Complete</div>
         <div class="w-full overflow-x-auto">
-            <table id="preview-table" class="min-w-full bg-white">
+            <table id="preview-table">
                 <thead>
                     <tr>
                         <th>Run</th>
