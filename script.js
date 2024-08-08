@@ -149,13 +149,13 @@ document.addEventListener("DOMContentLoaded", () => {
             let runSet = new Set();
 
             sheetData.forEach((row, index) => {
-                if (row.length < 15 || !row[3]) return; // Skip rows with insufficient data or no SO Number
+                if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
 
                 const runLetter = row[0];
                 const dropNumber = row[1];
                 const location = row[2];
-                const soNumber = row[3];
-                const name = row[4];
+                const soNumber = row[4]; // Updated to column E
+                const name = row[5]; // Updated to column F
                 const flatpack = row[10] || 0; // Column K
                 const channelBoxCount = row[11] || 0; // Column L
                 const flooringBoxCount = row[12] || 0; // Column M
@@ -308,9 +308,10 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(sheetData); // Debugging: Log the parsed sheet data
 
             sheetData.forEach((row, index) => {
-                if (index === 0 || !row[3]) return; // Skip header row and rows with no SO Number
+                if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
 
-                const soNumber = row[3];
+                const soNumber = row[4]; // Updated to column E
+                const name = row[5]; // Updated to column F
                 const flatpack = row[10] || 0;
                 const channelBoxCount = row[11] || 0;
                 const flooringBoxCount = row[12] || 0;
