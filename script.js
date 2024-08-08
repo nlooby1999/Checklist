@@ -21,6 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
 
+    const barcodeSuffixLength = 3; // The suffix length is 3 digits ("001", "002", etc.)
+    const barcodePrefixLength = 8; // The length of the barcode without the suffix (e.g., "SO204818")
+    const fullBarcodeLength = barcodePrefixLength + barcodeSuffixLength;
+
     // Load data from local storage
     loadDataFromLocalStorage();
 
@@ -28,8 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", handleFileUpload);
 
     // Handle scan input
-    scanInput.addEventListener("input", (event) => {
-        if (scanInput.value.length === barcodeLength) {
+    scanInput.addEventListener("input", () => {
+        if (scanInput.value.length === fullBarcodeLength) {
             const scannedCode = scanInput.value.trim();
             processScanInput(scannedCode);
             scanInput.value = "";
@@ -277,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Populate the run filter dropdown
-            runFilter.innerHTML = '<option value="all">All</option>';
+            runFilter.innerHTML = ''; // Clear any existing options
             runSet.forEach(run => {
                 const option = document.createElement("option");
                 option.value = run;
