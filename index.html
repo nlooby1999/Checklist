@@ -21,18 +21,18 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
-        .top-controls {
+        .top-controls,
+        .bottom-controls {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
         }
-        .top-controls > * {
-            margin-right: 10px;
-        }
         .top-controls input,
-        .top-controls select,
-        .top-controls button {
+        .bottom-controls input,
+        .bottom-controls select,
+        .top-controls button,
+        .bottom-controls button {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -117,6 +117,12 @@
         <div class="top-controls">
             <input type="text" id="scan-input" placeholder="Scan product code">
             <button id="enter-button" class="btn btn-primary">Enter</button>
+        </div>
+        <div class="flex space-x-2 mb-4">
+            <button id="download-report-button" class="btn btn-primary">Download Report</button>
+            <button id="remove-checklist-button" class="btn btn-danger">Remove Checklist</button>
+        </div>
+        <div class="bottom-controls">
             <input type="file" id="file-input">
             <select id="run-filter">
                 <option value="all">All</option>
@@ -125,10 +131,6 @@
                 <option value="scan">Scan</option>
                 <option value="mark">Mark</option>
             </select>
-        </div>
-        <div class="flex space-x-2 mb-4">
-            <button id="download-report-button" class="btn btn-primary">Download Report</button>
-            <button id="remove-checklist-button" class="btn btn-danger">Remove Checklist</button>
         </div>
         <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
         <div id="run-complete" class="hidden text-green-500">Run Complete</div>
