@@ -5,7 +5,9 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
-let barcodeLength = 11; // Updated to 11 characters
+let barcodePrefix = "SO"; // Prefix for the SO number
+let barcodeSuffixLength = 3; // Length of the suffix part
+let barcodeLength = barcodePrefix.length + 8 + barcodeSuffixLength; // Total length of the barcode
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
