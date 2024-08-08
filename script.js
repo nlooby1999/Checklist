@@ -5,7 +5,7 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
-let barcodeLength = 11; // Assuming the barcode length is 11 characters
+let barcodeLength = 12; // Updated to 12 characters
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
