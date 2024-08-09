@@ -162,10 +162,18 @@
         .btn-secondary:hover {
             background-color: #5a6268;
         }
+        .mode-display {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body class="bg-gray-200"> <!-- Updated background class -->
     <div class="container">
+        <div class="mode-display">
+            Mode: <span id="current-mode">Scan</span>
+        </div>
         <div class="top-controls">
             <input type="text" id="scan-input" placeholder="Scan product code">
             <button id="enter-button" class="btn btn-primary">Enter</button>
