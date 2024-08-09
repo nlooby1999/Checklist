@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle mode filter change
     modeFilter.addEventListener("change", () => {
-        const selectedMode = modeFilter.value === "scan" ? "Scan" : "Mark";
+        const selectedMode = modeFilter.value === "scan" ? "Scan" : modeFilter.value === "mark" ? "Mark" : "Allied";
         currentModeDisplay.textContent = selectedMode;
         displayPreviewData(previewData);
     });
@@ -120,6 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 checkRunCompletion();
                 saveDataToLocalStorage();
             } else {
+                if (modeFilter.value === "mark") {
+                    displayPreviewData([]); // Clear the table in Mark mode if the scan is unknown
+                }
                 unknownScanDiv.classList.remove("hidden");
                 setTimeout(() => {
                     unknownScanDiv.classList.add("hidden");
