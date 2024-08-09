@@ -69,6 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Handle run filter change
+    runFilter.addEventListener("change", filterByRun);
+
     // Handle mode filter change
     modeFilter.addEventListener("change", () => {
         displayPreviewData(previewData);
@@ -281,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Populate the run filter dropdown
-            runFilter.innerHTML = ''; // Clear any existing options
+            runFilter.innerHTML = '<option value="all">All Runs</option>'; // Reset options and include 'All Runs'
             runSet.forEach(run => {
                 const option = document.createElement("option");
                 option.value = run;
@@ -297,6 +300,16 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         reader.readAsArrayBuffer(file);
+    }
+
+    function filterByRun() {
+        const selectedRun = runFilter.value;
+        if (selectedRun === "all") {
+            displayPreviewData(allPreviewData);
+        } else {
+            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
+            displayPreviewData(filteredData);
+        }
     }
 
     function handleSavedReportUpload(event) {
@@ -461,16 +474,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             previewTbody.appendChild(rowElement);
         });
-    }
-
-    function filterByRun() {
-        const selectedRun = runFilter.value;
-        if (selectedRun === "all") {
-            displayPreviewData(allPreviewData);
-        } else {
-            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
-            displayPreviewData(filteredData);
-        }
     }
 
     function downloadReport(reportName) {
