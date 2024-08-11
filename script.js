@@ -22,9 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const modeFilter = document.getElementById("mode-filter");
     const currentModeDisplay = document.getElementById("current-mode");
 
-    const barcodeSuffixLength = 3; // The suffix length is 3 digits ("001", "002", etc.)
-    const barcodePrefixLength = 8; // The length of the barcode without the suffix (e.g., "SO204818")
-    const fullBarcodeLength = barcodePrefixLength + barcodeSuffixLength;
+    const fullBarcodeLength = 11; // Assuming full barcode length is 11 characters
 
     let products = [];
     let consignments = {};
@@ -45,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scanInput.value.length === fullBarcodeLength) {
             const scannedCode = scanInput.value.trim();
             processScanInput(scannedCode);
-            scanInput.value = "";
+            scanInput.value = ""; // Clear the input field
             scanInput.focus(); // Auto focus back on the search bar
         }
     });
@@ -54,7 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
     enterButton.addEventListener("click", () => {
         const scannedCode = scanInput.value.trim();
         processScanInput(scannedCode);
-        scanInput.value = "";
+        scanInput.value = ""; // Clear the input field
+        scanInput.focus(); // Auto focus back on the search bar
     });
 
     // Handle download report button click
@@ -80,8 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle mode filter change
     modeFilter.addEventListener("change", () => {
-        const selectedMode = modeFilter.value === "scan" ? "Scan" : modeFilter.value === "mark" ? "Mark" : "Allied";
-        currentModeDisplay.textContent = selectedMode;
+        const selectedMode = modeFilter.value;
+        currentModeDisplay.textContent = selectedMode.charAt(0).toUpperCase() + selectedMode.slice(1);
         displayPreviewData(previewData);
     });
 
@@ -150,8 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const sheet = workbook.Sheets[sheetName];
             const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            console.log(sheetData);  // Debugging: Log the parsed sheet data
-
             products = [];
             consignments = {};
             totalProducts = 0;
@@ -161,7 +158,6 @@ document.addEventListener("DOMContentLoaded", () => {
             runSummaries = [];
             runCompleteDiv.classList.add("hidden");
 
-            // Populate previewData and preview table
             const previewTbody = previewTable.querySelector("tbody");
             previewTbody.innerHTML = ""; // Clear any existing preview data
             let currentRun = '';
