@@ -40,8 +40,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle scan input
     scanInput.addEventListener("input", () => {
+        console.log(`Current Input: ${scanInput.value}`); // Debugging: Log input
         if (scanInput.value.length === fullBarcodeLength) {
             const scannedCode = scanInput.value.trim();
+            console.log(`Scanned Code: ${scannedCode}`); // Debugging: Log the scanned code
             processScanInput(scannedCode);
             scanInput.value = ""; // Clear the input field
             scanInput.focus(); // Auto focus back on the search bar
