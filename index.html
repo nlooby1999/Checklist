@@ -3,233 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consignment Tracker</title>
+    <title>Consignment Checklist</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        .top-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .top-controls input,
-        .top-controls button {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        .top-controls button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .top-controls button:hover {
-            background-color: #0056b3;
-        }
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            margin-right: 10px;
-        }
-        .file-input-wrapper button {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-        }
-        .file-input-wrapper input[type="file"] {
-            position: absolute;
-            top: 0;
-            left: 0;
-            font-size: 100px;
-            opacity: 0;
-            cursor: pointer;
-        }
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        .dropdown button {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 1rem;
-            border: none;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        }
-        .dropdown-content select {
-            width: 100%;
-            padding: 10px;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .dropdown-content select:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
-        .hidden {
-            display: none;
-        }
-        .complete {
-            background-color: #d4edda;
-        }
-        .marked-off {
-            background-color: #cce5ff;
-        }
-        .text-green-500 {
-            color: #38a169;
-        }
-        .text-red-500 {
-            color: #e53e3e;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 1rem; /* Adjust font size */
-        }
-        th, td {
-            white-space: nowrap;
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-            font-weight: 600;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #c82333;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-        .mode-display {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-    </style>
 </head>
-<body class="bg-gray-200"> <!-- Updated background class -->
-    <div class="container">
-        <div class="mode-display">
-            Mode: <span id="current-mode">Scan</span>
-        </div>
-        <div class="top-controls">
-            <input type="text" id="scan-input" placeholder="Scan product code">
-            <button id="enter-button" class="btn btn-primary">Enter</button>
-        </div>
-        <div class="flex space-x-2 mb-4">
-            <button id="download-report-button" class="btn btn-primary">Download Report</button>
-            <button id="remove-checklist-button" class="btn btn-danger">Remove Checklist</button>
-        </div>
-        <div class="bottom-controls flex">
-            <div class="file-input-wrapper">
-                <button>Select File</button>
-                <input type="file" id="file-input">
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-secondary">Filter Run</button>
-                <div class="dropdown-content">
-                    <select id="run-filter">
-                        <option value="all">All Runs</option>
-                    </select>
-                </div>
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-secondary">Filter Mode</button>
-                <div class="dropdown-content">
-                    <select id="mode-filter">
-                        <option value="scan">Scan</option>
-                        <option value="mark">Mark</option>
-                    </select>
-                </div>
+<body class="bg-gray-200">
+
+    <div class="container mx-auto p-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4">
+            <div id="current-mode" class="text-lg font-semibold"></div>
+            <div class="flex space-x-2">
+                <input id="scan-input" type="text" placeholder="Scan Barcode" class="border p-2 w-64">
+                <button id="enter-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Enter</button>
             </div>
         </div>
-        <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
-        <div id="run-complete" class="hidden text-green-500">Run Complete</div>
-        <div class="w-full overflow-x-auto">
-            <table id="preview-table">
+
+        <!-- Actions -->
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <input id="file-input" type="file" class="bg-gray-100 border p-2 rounded-lg">
+            </div>
+            <div class="flex space-x-2">
+                <button id="download-report-button" class="bg-green-500 text-white px-4 py-2 rounded-lg">Download Report</button>
+                <button id="remove-checklist-button" class="bg-red-500 text-white px-4 py-2 rounded-lg">Remove Checklist</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex justify-between items-center mb-4">
+            <select id="run-filter" class="bg-white border p-2 rounded-lg">
+                <option value="all">All Runs</option>
+            </select>
+            <select id="mode-filter" class="bg-white border p-2 rounded-lg">
+                <option value="scan">Scan</option>
+                <option value="mark">Mark</option>
+                <option value="allied">Allied</option>
+            </select>
+        </div>
+
+        <!-- Checklist Table -->
+        <div class="overflow-x-auto">
+            <table id="preview-table" class="table-auto w-full bg-white border rounded-lg">
                 <thead>
-                    <tr>
-                        <th>Run</th>
-                        <th>Drop</th>
-                        <th>Check</th>
-                        <th>Marked</th>
-                        <th>Location</th>
-                        <th>SO Number</th>
-                        <th>Name</th>
-                        <th>Flatpacks</th>
-                        <th>Channel</th>
-                        <th>Flooring</th>
-                        <th>Description</th>
+                    <tr class="bg-gray-300">
+                        <th class="px-4 py-2">Run</th>
+                        <th class="px-4 py-2">Drop</th>
+                        <th class="px-4 py-2">Check</th>
+                        <th class="px-4 py-2">Marked</th>
+                        <th class="px-4 py-2">Location</th>
+                        <th class="px-4 py-2">SO Number</th>
+                        <th class="px-4 py-2">Name</th>
+                        <th class="px-4 py-2">Flatpacks</th>
+                        <th class="px-4 py-2">Channel</th>
+                        <th class="px-4 py-2">Flooring</th>
+                        <th class="px-4 py-2">Description</th>
                     </tr>
                 </thead>
-                <tbody>
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
+
+        <!-- Unknown Scan Warning -->
+        <div id="unknown-scan" class="hidden mt-4 p-4 bg-red-500 text-white text-center rounded-lg">
+            Unknown Scan!
+        </div>
+
+        <!-- Run Complete Notification -->
+        <div id="run-complete" class="hidden mt-4 p-4 bg-green-500 text-white text-center rounded-lg">
+            All products scanned!
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="script.js"></script>
+
+    <!-- Modal Structure -->
+    <div id="consignment-summary-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+            <div id="modal-content" class="text-center">
+                <h2 id="modal-so-number" class="text-3xl font-bold mb-4"></h2>
+                <p id="modal-box-count" class="text-2xl font-semibold mb-4"></p>
+                <div id="modal-other-details" class="text-base"></div>
+            </div>
+            <button id="close-modal-button" class="mt-6 bg-blue-500 text-white px-4 py-2 rounded-lg">Close</button>
+        </div>
+    </div>
+
+    <!-- Include the required libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
+    <script src="app.js"></script> <!-- Link to external JavaScript file -->
+
 </body>
 </html>
