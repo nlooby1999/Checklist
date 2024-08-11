@@ -22,12 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const modeFilter = document.getElementById("mode-filter");
     const currentModeDisplay = document.getElementById("current-mode");
 
-    const modal = document.getElementById("consignment-summary-modal");
-    const modalSO = document.getElementById("modal-so-number");
-    const modalBoxCount = document.getElementById("modal-box-count");
-    const modalOtherDetails = document.getElementById("modal-other-details");
-    const closeModalButton = document.getElementById("close-modal-button");
-
     const fullBarcodeLength = 11; // Assuming full barcode length is 11 characters
 
     let products = [];
@@ -93,11 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle run filter change
     runFilter.addEventListener("change", filterByRun);
 
-    // Handle closing the modal
-    closeModalButton.addEventListener("click", () => {
-        modal.classList.add("hidden");
-    });
-
     function processScanInput(scannedCode) {
         if (scannedCode) {
             let found = false;
@@ -116,7 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else if (modeFilter.value === "mark") {
                         row.markedOff = true;
                         displayPreviewData([row]);
-                        showModal(row); // Show the modal with consignment details
                     }
                     found = true;
                     scannedProducts++;
@@ -148,17 +136,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 runCompleteDiv.classList.remove("hidden");
             }
         }
-    }
-
-    function showModal(row) {
-        modalSO.textContent = `SO Number: ${row.soNumber}`;
-        modalBoxCount.textContent = `Box Count: ${row.flatpack + row.channelBoxCount + row.flooringBoxCount}`;
-        modalOtherDetails.innerHTML = `
-            <p>Location: ${row.location}</p>
-            <p>Name: ${row.name}</p>
-            <p>Description: ${row.description}</p>
-        `;
-        modal.classList.remove("hidden");
     }
 
     function handleFileUpload(event) {
