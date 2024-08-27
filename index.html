@@ -232,6 +232,17 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script>
+let products = [];
+let consignments = {};
+let totalProducts = 0;
+let scannedProducts = 0;
+let previewData = [];
+let runSummaries = [];
+let allPreviewData = [];
+let barcodePrefix = "SO"; // Prefix for the SO number
+let barcodeSuffixLength = 3; // Length of the suffix part
+let barcodeLength = barcodePrefix.length + 8 + barcodeSuffixLength; // Total len
+        
         document.addEventListener("DOMContentLoaded", () => {
             const scanInput = document.getElementById("scan-input");
             const enterButton = document.getElementById("enter-button");
