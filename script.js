@@ -1,4 +1,3 @@
-// Encapsulate the script to avoid polluting the global namespace
 (() => {
     let products = [];
     let consignments = {};
