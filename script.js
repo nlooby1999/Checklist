@@ -37,7 +37,7 @@
         const numericPart = scannedCode.slice(barcodePrefix.length, barcodePrefix.length + mainNumericPartLength);
         return scannedCode.startsWith(barcodePrefix) &&
                scannedCode.length === barcodeLength &&
-               !isNaN(numericPart);
+               !isNaN(numericPart);  // Ensure that the numeric part is a valid number
     };
 
     const showAlert = (element, duration = 3000) => {
@@ -74,25 +74,27 @@
     fileInput.addEventListener("change", handleFileUpload);
 
     function handleScanInput() {
-        const scannedCode = scanInput.value.trim();
+        const scannedCode = scanInput.value.trim(); // Trim any whitespace from the input
         if (validateBarcode(scannedCode)) {
             processScanInput(scannedCode);
             scanInput.value = ""; // Clear the input field
             scanInput.focus(); // Auto focus back on the search bar
         } else {
-            toggleClass(scanInput, "text-red-500", true);
+            // Handle invalid barcode
+            scanInput.classList.add("text-red-500");
             setTimeout(() => {
-                toggleClass(scanInput, "text-red-500", false);
+                scanInput.classList.remove("text-red-500");
             }, 1000);
         }
     }
 
     function processScanInput(scannedCode) {
         let found = false;
-        toggleClass(unknownScanDiv, "hidden", true);
+        toggleClass(unknownScanDiv, "hidden", true); // Hide unknown scan div by default
 
         previewData.forEach((row, index) => {
             if (row.productNumbers.includes(scannedCode)) {
+                // If the barcode is found in the product list
                 if (modeFilter.value === "scan") {
                     row.scannedNumbers.add(scannedCode);
                     if (row.scannedNumbers.size === row.productNumbers.length) {
@@ -111,20 +113,22 @@
         });
 
         if (found) {
-            toggleClass(scanInput, "text-green-500", true);
+            // If the barcode was found and processed
+            scanInput.classList.add("text-green-500");
             setTimeout(() => {
-                toggleClass(scanInput, "text-green-500", false);
+                scanInput.classList.remove("text-green-500");
             }, 1000);
             checkRunCompletion();
             saveDataToLocalStorage();
         } else {
+            // If the barcode was not found in the product list
             if (modeFilter.value === "mark") {
                 displayPreviewData([]); // Clear the table in Mark mode if the scan is unknown
             }
             showAlert(unknownScanDiv);
-            toggleClass(scanInput, "text-red-500", true);
+            scanInput.classList.add("text-red-500");
             setTimeout(() => {
-                toggleClass(scanInput, "text-red-500", false);
+                scanInput.classList.remove("text-red-500");
             }, 1000);
         }
 
