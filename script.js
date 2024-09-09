@@ -65,9 +65,11 @@
         }
     });
 
+    // Automatically process the input when barcode length matches
     scanInput.addEventListener("input", () => {
-        if (scanInput.value.length === barcodeLength) {
-            handleScanInput();
+        const scannedCode = scanInput.value.trim();
+        if (scannedCode.length === barcodeLength) {
+            handleScanInput();  // Automatically handle the scan when the length matches
         }
     });
 
