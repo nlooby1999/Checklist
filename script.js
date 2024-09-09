@@ -55,16 +55,25 @@ document.addEventListener("DOMContentLoaded", () => {
             previewData.forEach((row, index) => {
                 if (row.productNumbers.includes(scannedCode)) {
                     if (modeFilter.value === "scan") {
+                        // Add scanned barcode to the set of scanned numbers
                         row.scannedNumbers.add(scannedCode);
+
+                        // Check if all the product numbers for this row have been scanned
                         if (row.scannedNumbers.size === row.productNumbers.length) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+
+                            // Mark the "Check" column with a check icon
                             rowElement.children[2].classList.add("complete");
-                            rowElement.children[3].classList.add("complete");
                             rowElement.querySelector('.status').innerHTML = '✅';
+
+                            // Mark the "Marked" column with a check icon
+                            row.markedOff = true;  // Ensure markedOff is set to true
+                            rowElement.children[3].classList.add("complete");
+                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
                         }
                     } else if (modeFilter.value === "mark") {
                         row.markedOff = true;
-                        displayPreviewData([row]);
+                        displayPreviewData([row]); // Update the display for the row
                     }
                     found = true;
                     scannedProducts++;
@@ -79,9 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 checkRunCompletion();
                 saveDataToLocalStorage();
             } else {
-                if (modeFilter.value === "mark") {
-                    displayPreviewData([]); // Clear the table in Mark mode if the scan is unknown
-                }
+                // Handle unknown scan
                 unknownScanDiv.classList.remove("hidden");
                 setTimeout(() => {
                     unknownScanDiv.classList.add("hidden");
