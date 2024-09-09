@@ -21,10 +21,6 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
-        .logo {
-            max-width: 200px;
-            margin-bottom: 20px;
-        }
         .top-controls, .bottom-controls {
             display: flex;
             align-items: center;
@@ -46,74 +42,11 @@
         .top-controls button:hover {
             background-color: #0056b3;
         }
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            margin-right: 10px;
-        }
-        .file-input-wrapper button {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-        }
-        .file-input-wrapper input[type="file"] {
-            position: absolute;
-            top: 0;
-            left: 0;
-            font-size: 100px;
-            opacity: 0;
-            cursor: pointer;
-        }
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        .dropdown button {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 1rem;
-            border: none;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        }
-        .dropdown-content select {
-            width: 100%;
-            padding: 10px;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .dropdown-content select:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
         .hidden {
             display: none;
         }
         .complete {
             background-color: #d4edda;
-        }
-        .marked-off {
-            background-color: #cce5ff;
         }
         .text-green-500 {
             color: #38a169;
@@ -137,81 +70,16 @@
             background-color: #f2f2f2;
             font-weight: 600;
         }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #c82333;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-        .mode-display {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Logo Section -->
-        <img class="logo" src="https://your-direct-image-link.com/logo.jpg" alt="Company Logo">
-
         <div class="mode-display">
             Mode: <span id="current-mode">Scan</span>
         </div>
         <div class="top-controls">
             <input type="text" id="scan-input" placeholder="Scan product code">
             <button id="enter-button" class="btn btn-primary">Enter</button>
-        </div>
-        <div class="flex space-x-2 mb-4">
-            <button id="download-report-button" class="btn btn-primary">Download Report</button>
-            <button id="remove-checklist-button" class="btn btn-danger">Remove Checklist</button>
-        </div>
-        <div class="bottom-controls flex">
-            <div class="file-input-wrapper">
-                <button>Select File</button>
-                <input type="file" id="file-input">
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-secondary">Filter Run</button>
-                <div class="dropdown-content">
-                    <select id="run-filter">
-                        <option value="all">All Runs</option>
-                    </select>
-                </div>
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-secondary">Filter Mode</button>
-                <div class="dropdown-content">
-                    <select id="mode-filter">
-                        <option value="scan">Scan</option>
-                        <option value="mark">Mark</option>
-                        <option value="allied">Allied</option>
-                    </select>
-                </div>
-            </div>
         </div>
         <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
         <div id="run-complete" class="hidden text-green-500">Run Complete</div>
@@ -225,7 +93,7 @@
                         <th>Marked</th>
                         <th>Location</th>
                         <th>SO Number</th>
-                        <th>Name</th>
+                        <th>Name</th> <!-- This is where the name is truncated to 40 characters -->
                         <th>Flatpacks</th>
                         <th>Channel</th>
                         <th>Flooring</th>
@@ -237,7 +105,6 @@
             </table>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js"></script> <!-- Ensure this points to your JS file -->
 </body>
 </html>
