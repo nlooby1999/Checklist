@@ -6,9 +6,9 @@ let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
 let barcodePrefix = "SO"; // Prefix for the SO number
-let barcodeSuffixLength = 3; // Length of the suffix part
-let mainNumericPartLength = 8; // Assuming the numeric part is 8 digits
-let barcodeLength = barcodePrefix.length + mainNumericPartLength + barcodeSuffixLength; // Total length
+let barcodeSuffixLength = 3; // Length of the suffix part (like 001, 002, etc.)
+let mainNumericPartLength = 8; // Assuming the main numeric part is 8 digits
+let barcodeLength = barcodePrefix.length + mainNumericPartLength + barcodeSuffixLength; // Total barcode length
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
@@ -48,35 +48,36 @@ document.addEventListener("DOMContentLoaded", () => {
     fileInput.addEventListener("change", handleFileUpload);
 
     function processScanInput(scannedCode) {
+        // Extract the consignment SO number by removing the suffix
+        const consignmentSO = scannedCode.slice(0, barcodePrefix.length + mainNumericPartLength);
+
         if (scannedCode.startsWith(barcodePrefix) && scannedCode.length === barcodeLength) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
 
+            // Go through each row in the consignment data (previewData)
             previewData.forEach((row, index) => {
-                if (row.productNumbers.includes(scannedCode)) {
+                // Check if the consignment matches the SO number
+                if (row.soNumber === consignmentSO) {
                     if (modeFilter.value === "scan") {
-                        // Add scanned barcode to the set of scanned numbers
+                        // Add the scanned barcode (with the suffix) to the set of scanned numbers
                         row.scannedNumbers.add(scannedCode);
 
-                        // Check if all the product numbers for this row have been scanned
-                        if (row.scannedNumbers.size === row.productNumbers.length) {
-                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                        // Mark the consignment row as "checked off"
+                        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                        
+                        // Mark the "Check" column with a check icon
+                        rowElement.children[2].classList.add("complete");
+                        rowElement.querySelector('.status').innerHTML = '✅';
 
-                            // Mark the "Check" column with a check icon
-                            rowElement.children[2].classList.add("complete");
-                            rowElement.querySelector('.status').innerHTML = '✅';
+                        // Mark the "Marked" column with a check icon
+                        row.markedOff = true;  // Ensure markedOff is set to true
+                        rowElement.children[3].classList.add("complete");
+                        rowElement.querySelector('.marked-off-status').innerHTML = '✅';
 
-                            // Mark the "Marked" column with a check icon
-                            row.markedOff = true;  // Ensure markedOff is set to true
-                            rowElement.children[3].classList.add("complete");
-                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-                        }
-                    } else if (modeFilter.value === "mark") {
-                        row.markedOff = true;
-                        displayPreviewData([row]); // Update the display for the row
+                        found = true;
+                        scannedProducts++;
                     }
-                    found = true;
-                    scannedProducts++;
                 }
             });
 
