@@ -3,95 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Product Tracker</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> <!-- Include XLSX Library -->
+    <title>Product Checklist</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .status-column {
+            width: 200px;
+        }
+        .run-complete {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: green;
+        }
+        .preview-table {
+            width: 100%;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+        .preview-table th, .preview-table td {
+            padding: 0.5rem;
+            text-align: left;
+            word-break: break-word;
+        }
+        .preview-table th {
+            background-color: #333;
+            color: white;
+        }
+        .preview-table td {
+            background-color: #555;
+            color: white;
+        }
+        .complete {
+            text-decoration: line-through;
+            color: #00FF00; /* Green color */
+        }
+        .marked-off {
+            background-color: #FFA500; /* Orange color */
+        }
+        .unknown-scan {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: red;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-    <div class="container mx-auto p-6">
-        <!-- Header -->
-        <header class="mb-6 text-center">
-            <h1 class="text-4xl font-bold text-gray-900">Product Tracker</h1>
-            <p class="text-gray-600">Efficiently manage and track product scans</p>
-        </header>
-
-        <!-- Scan and Upload Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div class="flex items-center space-x-4">
-                <input id="scan-input" type="text" placeholder="Scan product code..." class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">Scan</button>
+<body class="bg-gray-800 text-white p-4">
+    <div class="container mx-auto">
+        <div>
+            <h1 class="text-2xl font-bold mb-4">Product Checklist</h1>
+            <div class="flex gap-2 mb-4">
+                <input type="file" id="file-input" class="text-black p-2">
+                <input type="file" id="saved-report-input" class="text-black p-2">
             </div>
-
-            <div class="flex items-center space-x-4">
-                <input id="file-input" type="file" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" accept=".xlsx, .xls">
-                <button class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">Upload File</button>
+            <div class="flex gap-2 mb-4">
+                <select id="mode-filter" class="border p-2 text-black">
+                    <option value="scan">Scan Mode</option>
+                    <option value="mark">Mark Off Mode</option>
+                </select>
+                <input type="text" id="scan-input" class="border p-4 w-full text-black" placeholder="Scan product or SO number..." autofocus>
             </div>
-        </div>
-
-        <!-- Zoom Controls -->
-        <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center space-x-4">
-                <button id="zoom-in" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md transition">Zoom In</button>
-                <button id="zoom-out" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md transition">Zoom Out</button>
+            <div id="unknown-scan" class="unknown-scan hidden">Unknown Scan</div>
+            <div class="overflow-x-auto">
+                <table id="preview-table" class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>Run</th>
+                            <th>Drop</th>
+                            <th>Location</th>
+                            <th>Date</th>
+                            <th>SO Number</th>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Suburb</th>
+                            <th>Postcode</th>
+                            <th>Phone Number</th>
+                            <th>Flatpack</th>
+                            <th>Channel Box</th>
+                            <th>Flooring Box</th>
+                            <th>Weight</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Marked Off</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Preview data will be dynamically added here -->
+                    </tbody>
+                </table>
             </div>
-            <div>
-                <button id="download-report-button" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition">Download Report</button>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button id="download-report-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4">Download Report</button>
+                <button id="zoom-in" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom In</button>
+                <button id="zoom-out" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom Out</button>
             </div>
-        </div>
-
-        <!-- Filter Options -->
-        <div class="flex space-x-4 mb-6">
-            <select id="run-filter" class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="all">All Runs</option>
-                <!-- Dynamically Populated -->
-            </select>
-            <select id="mode-filter" class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="scan">Scan Mode</option>
-                <option value="mark">Mark Mode</option>
-            </select>
-        </div>
-
-        <!-- Preview Table -->
-        <div class="overflow-x-auto bg-white rounded-lg shadow-md">
-            <table id="preview-table" class="min-w-full table-auto">
-                <thead class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                    <tr>
-                        <th class="py-3 px-6 text-left">Run</th>
-                        <th class="py-3 px-6 text-left">Drop</th>
-                        <th class="py-3 px-6 text-left">Location</th>
-                        <th class="py-3 px-6 text-left">Date</th>
-                        <th class="py-3 px-6 text-left">SO Number</th>
-                        <th class="py-3 px-6 text-left">Name</th>
-                        <th class="py-3 px-6 text-left">Address</th>
-                        <th class="py-3 px-6 text-left">Suburb</th>
-                        <th class="py-3 px-6 text-left">Postcode</th>
-                        <th class="py-3 px-6 text-left">Phone</th>
-                        <th class="py-3 px-6 text-left">Flatpack</th>
-                        <th class="py-3 px-6 text-left">Channel</th>
-                        <th class="py-3 px-6 text-left">Flooring</th>
-                        <th class="py-3 px-6 text-left">Weight</th>
-                        <th class="py-3 px-6 text-left">Description</th>
-                        <th class="py-3 px-6 text-left">Status</th>
-                        <th class="py-3 px-6 text-left">Marked</th>
-                        <th class="py-3 px-6 text-left">Notes</th>
-                    </tr>
-                </thead>
-                <tbody class="text-gray-600 text-sm font-light">
-                    <!-- Dynamically Populated Rows -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Completion Notification -->
-        <div id="run-complete" class="hidden mt-6 p-4 bg-green-100 text-green-600 rounded-lg text-center">
-            <p>All products have been scanned!</p>
-        </div>
-
-        <div id="unknown-scan" class="hidden mt-6 p-4 bg-red-100 text-red-600 rounded-lg text-center">
-            <p>Unknown product code scanned.</p>
         </div>
     </div>
-
-    <script src="app.js"></script>
+    <div id="run-complete" class="run-complete text-center hidden">
+        Run Complete
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
