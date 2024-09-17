@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
+            background-color: #f8f9fa; /* Light grey background */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
             color: #333;
             margin: 0;
@@ -42,11 +43,17 @@
         .top-controls button:hover {
             background-color: #0056b3;
         }
+        .bottom-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
         .file-input-wrapper {
             position: relative;
             overflow: hidden;
             display: inline-block;
-            margin-right: 10px;
         }
         .file-input-wrapper button {
             background-color: #6c757d;
@@ -64,43 +71,6 @@
             font-size: 100px;
             opacity: 0;
             cursor: pointer;
-        }
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-        .dropdown button {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-size: 1rem;
-            border: none;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: white;
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        }
-        .dropdown-content select {
-            width: 100%;
-            padding: 10px;
-            font-size: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .dropdown-content select:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-        .dropdown:hover .dropdown-content {
-            display: block;
         }
         .hidden {
             display: none;
@@ -162,18 +132,10 @@
         .btn-secondary:hover {
             background-color: #5a6268;
         }
-        .mode-display {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
     </style>
 </head>
-<body class="bg-gray-200"> <!-- Updated background class -->
+<body>
     <div class="container">
-        <div class="mode-display">
-            Mode: <span id="current-mode">Scan</span>
-        </div>
         <div class="top-controls">
             <input type="text" id="scan-input" placeholder="Scan product code">
             <button id="enter-button" class="btn btn-primary">Enter</button>
@@ -182,28 +144,16 @@
             <button id="download-report-button" class="btn btn-primary">Download Report</button>
             <button id="remove-checklist-button" class="btn btn-danger">Remove Checklist</button>
         </div>
-        <div class="bottom-controls flex">
+        <div class="bottom-controls">
             <div class="file-input-wrapper">
                 <button>Select File</button>
                 <input type="file" id="file-input">
             </div>
-            <div class="dropdown">
-                <button class="btn btn-secondary">Filter Run</button>
-                <div class="dropdown-content">
-                    <select id="run-filter">
-                        <option value="all">All Runs</option>
-                    </select>
-                </div>
-            </div>
-            <div class="dropdown">
-                <button class="btn btn-secondary">Filter Mode</button>
-                <div class="dropdown-content">
-                    <select id="mode-filter">
-                        <option value="scan">Scan</option>
-                        <option value="mark">Mark</option>
-                    </select>
-                </div>
-            </div>
+            <select id="run-filter" class="mt-4"></select>
+            <select id="mode-filter" class="mt-2">
+                <option value="scan">Scan</option>
+                <option value="mark">Mark</option>
+            </select>
         </div>
         <div id="unknown-scan" class="hidden text-red-500">Unknown Scan</div>
         <div id="run-complete" class="hidden text-green-500">Run Complete</div>
