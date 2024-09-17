@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barcode Checklist</title>
+  <title>Barcode Checklist with Manifest</title>
   <style>
     /* Basic Styles for UI Enhancements */
     .loading-spinner {
@@ -35,6 +35,7 @@
 <button id="removeChecklistButton">Clear Checklist</button>
 <div class="loading-spinner" id="spinner"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('fileInput');
@@ -78,9 +79,9 @@
         alert('Invalid barcode length');
         return;
       }
-      const match = checklistData.find(item => item.barcode === barcode);
+      const match = checklistData.find(item => item['Order Number'] === barcode);
       if (match) {
-        alert('Barcode found: ' + match.productName);
+        alert('Barcode found: ' + match['Customer Name']);
         updateChecklistStatus(barcode, 'scanned');
       } else {
         alert('Barcode not found in checklist');
@@ -118,7 +119,24 @@
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json(sheet);
-            resolve(jsonData);
+            
+            // Map columns to relevant fields as per the provided Excel structure
+            const cleanedData = jsonData.map(row => ({
+              ID: row['A'],
+              Sequence: row[1],
+              Region: row['ABX: EAST'] || row['ABX: SOUTH'], // Handle different regions
+              Date: row['2024-09-16 00:00:00'],  // Map the date column appropriately
+              'Order Number': row['SO209548'], // Order number mapping
+              'Customer Name': row['Scott Anthony Wadeson'], // Customer name mapping
+              'Address Line 1': row['20 Victoria Road'], // Address line 1
+              City: row['Beechworth'], // City
+              'Postal Code': row[3747], // Postal code
+              'Contact Number': row[61421545900], // Contact number
+              Quantity: row[2], // Quantity
+              Product: row['SHEETING BOX'] // Product type
+            }));
+
+            resolve(cleanedData);
           } catch (err) {
             reject('Error reading Excel file');
           }
@@ -131,13 +149,13 @@
     function populateChecklist(data) {
       checklistData.length = 0;
       data.forEach(item => {
-        checklistData.push({ barcode: item.Barcode, productName: item.ProductName, status: 'pending' });
+        checklistData.push(item);
       });
       saveDataToLocalStorage(checklistData);
     }
 
-    function updateChecklistStatus(barcode, status) {
-      const item = checklistData.find(i => i.barcode === barcode);
+    function updateChecklistStatus(orderNumber, status) {
+      const item = checklistData.find(i => i['Order Number'] === orderNumber);
       if (item) {
         item.status = status;
         saveDataToLocalStorage(checklistData);
