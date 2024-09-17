@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
-    const savedReportInput = document.getElementById("saved-report-input");
     const downloadReportButton = document.getElementById("download-report-button");
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
@@ -62,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle scan input processing
     function processScanInput(scannedCode) {
         if (!scannedCode) return;
-        
+
         let found = false;
         unknownScanDiv.classList.add("hidden");
 
@@ -95,27 +94,31 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Handle file upload and parsing
+    // Handle file upload and CSV parsing
     function handleFileUpload(event) {
         const file = event.target.files[0];
-        const reader = new FileReader();
 
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        if (!file) {
+            alert("Please upload a valid CSV file.");
+            return;
+        }
 
-            resetChecklistData();
-            parseSheetData(sheetData);
-        };
-
-        reader.readAsArrayBuffer(file);
+        Papa.parse(file, {
+            header: false, // Set to true if your CSV has headers
+            skipEmptyLines: true, // Skip any empty lines
+            complete: function(results) {
+                const csvData = results.data;
+                resetChecklistData();
+                parseCSVData(csvData);
+            },
+            error: function(err) {
+                console.error("Error parsing CSV file:", err);
+            }
+        });
     }
 
-    // Parse sheet data and populate table
-    function parseSheetData(sheetData) {
+    // Parse CSV data and populate table
+    function parseCSVData(csvData) {
         const previewTbody = previewTable.querySelector("tbody");
         previewTbody.innerHTML = ""; // Clear existing preview data
         let currentRun = '';
@@ -125,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let currentRunTotalFlooring = 0;
         let runSet = new Set();
 
-        sheetData.forEach((row, index) => {
+        csvData.forEach((row, index) => {
             if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
 
             const rowData = extractRowData(row);
