@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Checklist</title>
+    <title>Product Checklist with AI</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .container {
@@ -49,12 +49,15 @@
             font-weight: bold;
             color: red;
         }
+        .anomaly-flag {
+            background-color: #FF0000; /* Red color for anomalies */
+        }
     </style>
 </head>
 <body class="bg-gray-800 text-white p-4">
     <div class="container mx-auto">
         <div>
-            <h1 class="text-2xl font-bold mb-4">Product Checklist</h1>
+            <h1 class="text-2xl font-bold mb-4">Product Checklist with AI</h1>
             <div class="flex gap-2 mb-4">
                 <input type="file" id="file-input" class="text-black p-2">
                 <input type="file" id="saved-report-input" class="text-black p-2">
@@ -98,15 +101,17 @@
             </div>
             <div class="flex flex-wrap gap-2 mt-4">
                 <button id="download-report-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4">Download Report</button>
-                <button id="zoom-in" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom In</button>
-                <button id="zoom-out" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4">Zoom Out</button>
             </div>
         </div>
     </div>
     <div id="run-complete" class="run-complete text-center hidden">
         Run Complete
     </div>
+    <div id="ai-status" class="text-center mt-4 hidden">
+        <p id="anomaly-status" class="text-yellow-500 text-xl"></p>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script> <!-- TensorFlow.js integration -->
 </body>
 </html>
