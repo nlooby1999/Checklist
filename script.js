@@ -13,8 +13,6 @@ let barcodeLength = barcodePrefix.length + mainNumericPartLength + barcodeSuffix
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
-    const downloadReportButton = document.getElementById("download-report-button");
-    const removeChecklistButton = document.getElementById("remove-checklist-button");
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
@@ -40,8 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Function that processes the scanned barcode
     function processScanInput(scannedCode) {
-        const consignmentSO = scannedCode.slice(0, barcodePrefix.length + mainNumericPartLength);
+        const consignmentSO = scannedCode.slice(0, barcodePrefix.length + mainNumericPartLength); // Extract consignment SO number
 
+        // Verify if the scanned code has the correct prefix and length
         if (scannedCode.startsWith(barcodePrefix) && scannedCode.length === barcodeLength) {
             let found = false;
             unknownScanDiv.classList.add("hidden");
@@ -66,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             scannedProducts++;
                         }
                     } else if (modeFilter.value === "mark") {
+                        // In mark mode, check off the "Marked" column if any barcode matches
                         const rowElement = document.querySelector(`tr[data-index="${index}"]`);
                         row.markedOff = true;
                         rowElement.children[3].classList.add("complete");
@@ -145,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const productNumbers = [];
                 let suffix = 1;
 
+                // Create product numbers by concatenating suffix to SO number
                 for (let i = 0; i < flatpack; i++) {
                     const productNumber = `${soNumber}${String(suffix++).padStart(barcodeSuffixLength, '0')}`;
                     products.push(productNumber);
@@ -193,24 +194,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 previewData.push(rowData);
                 allPreviewData.push(rowData);
                 runSet.add(runLetter);
-
-                // Additional logic to handle summaries, table rows, etc.
             });
 
             // Additional logic to handle summaries, run filter, and displaying data
         };
 
         reader.readAsArrayBuffer(file);
-    }
-
-    function filterByRun() {
-        const selectedRun = runFilter.value;
-        if (selectedRun === "all") {
-            displayPreviewData(allPreviewData);
-        } else {
-            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
-            displayPreviewData(filteredData);
-        }
     }
 
     function checkRunCompletion() {
@@ -291,91 +280,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Save updated data to local storage
         saveDataToLocalStorage();
-    }
-
-    function displayPreviewData(data) {
-        const previewTbody = previewTable.querySelector("tbody");
-        previewTbody.innerHTML = ""; // Clear existing preview data
-
-        data.forEach((row, index) => {
-            const rowElement = document.createElement("tr");
-            rowElement.setAttribute('data-index', index);
-            rowElement.innerHTML = `
-                <td class="run-letter">${row.runLetter}</td>
-                <td>${row.dropNumber}</td>
-                <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-                <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-                <td>${row.location}</td>
-                <td>${row.soNumber}</td>
-                <td>${row.name}</td>
-                <td>${row.flatpack}</td>
-                <td>${row.channelBoxCount}</td>
-                <td>${row.flooringBoxCount}</td>
-                <td>${row.description}</td>
-            `;
-            if (row.scannedNumbers.size === row.productNumbers.length) {
-                rowElement.children[2].classList.add("complete");
-                rowElement.children[3].classList.add("complete");
-            }
-            if (row.markedOff) {
-                rowElement.children[3].classList.add("marked-off");
-            }
-            previewTbody.appendChild(rowElement);
-        });
-    }
-
-    function downloadReport(reportName) {
-        const reportData = previewData.map(row => ({
-            Run: row.runLetter,
-            Drop: row.dropNumber,
-            Check: row.scannedNumbers.size === row.productNumbers.length ? 'Complete' : 'Incomplete',
-            Marked: row.markedOff ? 'true' : 'false',
-            Location: row.location,
-            'SO Number': row.soNumber,
-            Name: row.name,
-            Flatpacks: row.flatpack,
-            Channel: row.channelBoxCount,
-            Flooring: row.flooringBoxCount,
-            Description: row.description
-        }));
-
-        const summaryData = runSummaries.map(summary => ({
-            Run: summary.runLetter,
-            Flatpacks: summary.flatpacks,
-            Channels: summary.channels,
-            Flooring: summary.flooring,
-            Pallets: summary.pallets,
-            Notes: summary.notes || ''
-        }));
-
-        const now = new Date();
-        const timestamp = now.toLocaleString();
-
-        const worksheet = XLSX.utils.json_to_sheet(reportData);
-        const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-        XLSX.utils.sheet_add_aoa(summarySheet, [['Report generated on:', timestamp]], { origin: -1 });
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
-        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-        XLSX.writeFile(workbook, `${reportName}_${now.toISOString().split('T')[0]}.xlsx`);
-    }
-
-    function clearChecklistData() {
-        // Clear data arrays
-        products = [];
-        consignments = {};
-        totalProducts = 0;
-        scannedProducts = 0;
-        previewData = [];
-        runSummaries = [];
-        allPreviewData = [];
-
-        // Clear local storage
-        localStorage.removeItem('checklistData');
-
-        // Clear the preview table
-        const previewTbody = previewTable.querySelector("tbody");
-        previewTbody.innerHTML = "";
     }
 
     function saveDataToLocalStorage() {
