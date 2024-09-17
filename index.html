@@ -68,6 +68,7 @@
         populateChecklist(data);
       } catch (error) {
         alert('Error processing file: ' + error.message);
+        console.error(error); // Log the error for further debugging
       } finally {
         spinner.style.display = 'none'; // Hide spinner after processing
       }
@@ -120,25 +121,30 @@
             const sheet = workbook.Sheets[sheetName];
             const jsonData = XLSX.utils.sheet_to_json(sheet);
             
-            // Map columns to relevant fields as per the provided Excel structure
+            // Ensure the required columns are present
+            if (!jsonData[0] || !jsonData[0]['SO209548']) {
+              throw new Error('Order Number (SO209548) column not found. Please check the file format.');
+            }
+
+            // Map columns to relevant fields
             const cleanedData = jsonData.map(row => ({
-              ID: row['A'],
-              Sequence: row[1],
-              Region: row['ABX: EAST'] || row['ABX: SOUTH'], // Handle different regions
-              Date: row['2024-09-16 00:00:00'],  // Map the date column appropriately
-              'Order Number': row['SO209548'], // Order number mapping
-              'Customer Name': row['Scott Anthony Wadeson'], // Customer name mapping
-              'Address Line 1': row['20 Victoria Road'], // Address line 1
-              City: row['Beechworth'], // City
-              'Postal Code': row[3747], // Postal code
-              'Contact Number': row[61421545900], // Contact number
-              Quantity: row[2], // Quantity
-              Product: row['SHEETING BOX'] // Product type
+              ID: row['A'] || 'Unknown',
+              Sequence: row[1] || 'Unknown',
+              Region: row['ABX: EAST'] || row['ABX: SOUTH'] || 'Unknown', 
+              Date: row['2024-09-16 00:00:00'] || 'Unknown', 
+              'Order Number': row['SO209548'] || 'Unknown', 
+              'Customer Name': row['Scott Anthony Wadeson'] || 'Unknown', 
+              'Address Line 1': row['20 Victoria Road'] || 'Unknown',
+              City: row['Beechworth'] || 'Unknown',
+              'Postal Code': row[3747] || 'Unknown',
+              'Contact Number': row[61421545900] || 'Unknown',
+              Quantity: row[2] || 'Unknown',
+              Product: row['SHEETING BOX'] || 'Unknown'
             }));
 
             resolve(cleanedData);
           } catch (err) {
-            reject('Error reading Excel file');
+            reject('Error reading Excel file: ' + err.message);
           }
         };
         reader.onerror = () => reject('Error loading file');
