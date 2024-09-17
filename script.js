@@ -12,7 +12,6 @@ let barcodeLength = barcodePrefix.length + mainNumericPartLength + barcodeSuffix
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
-    const enterButton = document.getElementById("enter-button");
     const fileInput = document.getElementById("file-input");
     const downloadReportButton = document.getElementById("download-report-button");
     const removeChecklistButton = document.getElementById("remove-checklist-button");
@@ -26,29 +25,21 @@ document.addEventListener("DOMContentLoaded", () => {
     // Load data from local storage
     loadDataFromLocalStorage();
 
-    // Handle scan input
+    // Handle scan input and auto-enter when barcode is fully entered
     scanInput.addEventListener("input", () => {
         if (scanInput.value.length === barcodeLength) {
             const scannedCode = scanInput.value.trim();
-            processScanInput(scannedCode);
+            processScanInput(scannedCode); // Automatically trigger scan processing
             scanInput.value = ""; // Clear the input field
-            scanInput.focus(); // Auto focus back on the search bar
+            scanInput.focus(); // Refocus for the next scan
         }
-    });
-
-    // Handle Enter button click
-    enterButton.addEventListener("click", () => {
-        const scannedCode = scanInput.value.trim();
-        processScanInput(scannedCode);
-        scanInput.value = ""; // Clear the input field
-        scanInput.focus(); // Auto focus back on the search bar
     });
 
     // Handle file upload
     fileInput.addEventListener("change", handleFileUpload);
 
+    // Function that processes the scanned barcode
     function processScanInput(scannedCode) {
-        // Extract the consignment SO number by removing the suffix
         const consignmentSO = scannedCode.slice(0, barcodePrefix.length + mainNumericPartLength);
 
         if (scannedCode.startsWith(barcodePrefix) && scannedCode.length === barcodeLength) {
@@ -57,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Go through each row in the consignment data (previewData)
             previewData.forEach((row, index) => {
-                // Check if the consignment matches the SO number
                 if (row.soNumber === consignmentSO) {
                     const totalItemsInConsignment = row.flatpack + row.channelBoxCount + row.flooringBoxCount;
 
@@ -68,8 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         // If all barcodes for the consignment are scanned, check off the "Check" column
                         if (row.scannedNumbers.size === totalItemsInConsignment) {
                             const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-
-                            // Mark the "Check" column with a check icon
                             rowElement.children[2].classList.add("complete");
                             rowElement.querySelector('.status').innerHTML = '✅';
 
@@ -78,15 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             scannedProducts++;
                         }
                     } else if (modeFilter.value === "mark") {
-                        // In mark mode, as long as any barcode for the consignment matches, check off the "Marked" column
                         const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-
                         row.markedOff = true;
-
-                        // Mark the "Marked" column with a check icon
                         rowElement.children[3].classList.add("complete");
                         rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-
                         found = true;
                     }
                 }
@@ -100,7 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 checkRunCompletion();
                 saveDataToLocalStorage();
             } else {
-                // Handle unknown scan
                 unknownScanDiv.classList.remove("hidden");
                 setTimeout(() => {
                     unknownScanDiv.classList.add("hidden");
@@ -115,7 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 runCompleteDiv.classList.remove("hidden");
             }
         } else {
-            // Handle invalid barcode length or prefix
             scanInput.classList.add("text-red-500");
             setTimeout(() => {
                 scanInput.classList.remove("text-red-500");
