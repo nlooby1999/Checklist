@@ -9,19 +9,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewTable = document.getElementById("preview-table");
     const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
-    const currentModeDisplay = document.getElementById("current-mode");
 
     const barcodeSuffixLength = 3; // The suffix length is 3 digits ("001", "002", etc.)
     const barcodePrefixLength = 8; // The length of the barcode without the suffix (e.g., "SO204818")
     const fullBarcodeLength = barcodePrefixLength + barcodeSuffixLength;
-
-    let products = [];
-    let consignments = {};
-    let totalProducts = 0;
-    let scannedProducts = 0;
-    let previewData = [];
-    let allPreviewData = [];
-    let runSummaries = [];
 
     // Load data from local storage
     loadDataFromLocalStorage();
@@ -69,13 +60,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle mode filter change
     modeFilter.addEventListener("change", () => {
-        const selectedMode = modeFilter.value === "scan" ? "Scan" : "Mark";
-        currentModeDisplay.textContent = selectedMode;
         displayPreviewData(previewData);
     });
-
-    // Handle run filter change
-    runFilter.addEventListener("change", filterByRun);
 
     function processScanInput(scannedCode) {
         if (scannedCode) {
@@ -284,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Populate the run filter dropdown
-            runFilter.innerHTML = '<option value="all">All Runs</option>'; // Reset options and include 'All Runs'
+            runFilter.innerHTML = ''; // Clear any existing options
             runSet.forEach(run => {
                 const option = document.createElement("option");
                 option.value = run;
@@ -302,14 +288,57 @@ document.addEventListener("DOMContentLoaded", () => {
         reader.readAsArrayBuffer(file);
     }
 
-    function filterByRun() {
-        const selectedRun = runFilter.value;
-        if (selectedRun === "all") {
-            displayPreviewData(allPreviewData);
-        } else {
-            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
-            displayPreviewData(filteredData);
-        }
+    function handleSavedReportUpload(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            console.log(sheetData); // Debugging: Log the parsed sheet data
+
+            sheetData.forEach((row, index) => {
+                if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
+
+                const soNumber = row[4]; // Updated to column E
+                const name = row[5]; // Updated to column F
+                const flatpack = row[10] || 0;
+                const channelBoxCount = row[11] || 0;
+                const flooringBoxCount = row[12] || 0;
+                const status = row[15];
+                const markedOff = row[16] === 'true';
+
+                previewData.forEach(previewRow => {
+                    if (previewRow.soNumber === soNumber) {
+                        if (status === 'Complete') {
+                            previewRow.scannedNumbers = new Set(previewRow.productNumbers);
+                        }
+
+                        previewRow.markedOff = markedOff;
+                        if (markedOff) {
+                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+                            rowElement.children[2].classList.add("marked-off");
+                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
+                        }
+
+                        if (flatpack > 0) previewRow.flatpack = flatpack;
+                        if (channelBoxCount > 0) previewRow.channelBoxCount = channelBoxCount;
+                        if (flooringBoxCount > 0) previewRow.flooringBoxCount = flooringBoxCount;
+                    }
+                });
+            });
+
+            // Update the displayed data
+            displayPreviewData(previewData);
+            saveDataToLocalStorage();
+            checkRunCompletion();
+        };
+
+        reader.readAsArrayBuffer(file);
     }
 
     function checkRunCompletion() {
@@ -421,6 +450,16 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             previewTbody.appendChild(rowElement);
         });
+    }
+
+    function filterByRun() {
+        const selectedRun = runFilter.value;
+        if (selectedRun === "all") {
+            displayPreviewData(allPreviewData);
+        } else {
+            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
+            displayPreviewData(filteredData);
+        }
     }
 
     function downloadReport(reportName) {
