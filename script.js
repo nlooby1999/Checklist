@@ -5,7 +5,6 @@ let scannedProducts = 0;
 let previewData = [];
 let runSummaries = [];
 let allPreviewData = [];
-let zoomLevel = 1;
 
 document.addEventListener("DOMContentLoaded", () => {
     const scanInput = document.getElementById("scan-input");
@@ -15,8 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const unknownScanDiv = document.getElementById("unknown-scan");
     const runCompleteDiv = document.getElementById("run-complete");
     const previewTable = document.getElementById("preview-table");
-    const zoomInButton = document.getElementById("zoom-in");
-    const zoomOutButton = document.getElementById("zoom-out");
     const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
 
@@ -49,19 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle mode filter change
     modeFilter.addEventListener("change", () => {
         displayPreviewData(previewData);
-    });
-
-    // Zoom in and zoom out functionality
-    zoomInButton.addEventListener("click", () => {
-        zoomLevel += 0.1;
-        previewTable.style.transform = `scale(${zoomLevel})`;
-    });
-
-    zoomOutButton.addEventListener("click", () => {
-        if (zoomLevel > 0.2) {
-            zoomLevel -= 0.1;
-            previewTable.style.transform = `scale(${zoomLevel})`;
-        }
     });
 
     function processScanInput(scannedCode) {
