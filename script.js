@@ -59,24 +59,35 @@ document.addEventListener("DOMContentLoaded", () => {
             previewData.forEach((row, index) => {
                 // Check if the consignment matches the SO number
                 if (row.soNumber === consignmentSO) {
+                    const totalItemsInConsignment = row.flatpack + row.channelBoxCount + row.flooringBoxCount;
+
                     if (modeFilter.value === "scan") {
-                        // Add the scanned barcode (with the suffix) to the set of scanned numbers
+                        // In scan mode, add the scanned barcode (with suffix) to the set of scanned numbers
                         row.scannedNumbers.add(scannedCode);
 
-                        // Mark the consignment row as "checked off"
+                        // If all barcodes for the consignment are scanned, check off the "Check" column
+                        if (row.scannedNumbers.size === totalItemsInConsignment) {
+                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+
+                            // Mark the "Check" column with a check icon
+                            rowElement.children[2].classList.add("complete");
+                            rowElement.querySelector('.status').innerHTML = '✅';
+
+                            row.markedOff = true;
+                            found = true;
+                            scannedProducts++;
+                        }
+                    } else if (modeFilter.value === "mark") {
+                        // In mark mode, as long as any barcode for the consignment matches, check off the "Marked" column
                         const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                        
-                        // Mark the "Check" column with a check icon
-                        rowElement.children[2].classList.add("complete");
-                        rowElement.querySelector('.status').innerHTML = '✅';
+
+                        row.markedOff = true;
 
                         // Mark the "Marked" column with a check icon
-                        row.markedOff = true;  // Ensure markedOff is set to true
                         rowElement.children[3].classList.add("complete");
                         rowElement.querySelector('.marked-off-status').innerHTML = '✅';
 
                         found = true;
-                        scannedProducts++;
                     }
                 }
             });
