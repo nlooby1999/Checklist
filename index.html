@@ -8,16 +8,16 @@
     <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #333;
+        color: #fff; /* Change text color to white for better contrast */
         margin: 0;
         padding: 0;
-        background-color: #28a745; /* Green background */
+        background-color: #2d2d2d; /* Dark grey background */
     }
     .container {
         max-width: 1200px;
         margin: 20px auto;
         padding: 20px;
-        background-color: #fff;
+        background-color: #333; /* Slightly lighter grey for container */
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         border-radius: 8px;
     }
@@ -29,9 +29,11 @@
     }
     .top-controls input, .top-controls button {
         padding: 10px;
-        border: 1px solid #ccc;
+        border: 1px solid #555; /* Darker border for input and button */
         border-radius: 4px;
         font-size: 1rem;
+        background-color: #444; /* Darker background for inputs */
+        color: white; /* White text */
     }
     .top-controls button {
         background-color: #007bff;
@@ -106,31 +108,33 @@
         display: none;
     }
     .complete {
-        background-color: #d4edda;
+        background-color: #28a745; /* Green background for completed */
     }
     .marked-off {
-        background-color: #cce5ff;
+        background-color: #007bff; /* Blue background for marked off */
     }
     .text-green-500 {
-        color: #38a169;
+        color: #28a745; /* Green text */
     }
     .text-red-500 {
-        color: #e53e3e;
+        color: #dc3545; /* Red text */
     }
     table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
         font-size: 1rem;
+        background-color: #333; /* Darker table background */
+        color: white; /* White text */
     }
     th, td {
         white-space: nowrap;
-        border: 1px solid #ddd;
+        border: 1px solid #444; /* Dark border */
         padding: 12px;
         text-align: left;
     }
     th {
-        background-color: #f2f2f2;
+        background-color: #555; /* Lighter grey for header */
         font-weight: 600;
     }
     .btn {
@@ -166,6 +170,7 @@
         font-size: 1.25rem;
         font-weight: 600;
         margin-bottom: 10px;
+        color: white;
     }
 </style>
 
