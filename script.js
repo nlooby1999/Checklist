@@ -26,9 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Handle file input change
     fileInput.addEventListener("change", handleFileUpload);
 
-    // Handle saved report file input change
-    savedReportInput.addEventListener("change", handleSavedReportUpload);
-
     // Handle scan input
     scanInput.addEventListener("keypress", (event) => {
         if (event.key === 'Enter') {
@@ -117,173 +114,130 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // Handle file upload and parsing of CSV file
     function handleFileUpload(event) {
         const file = event.target.files[0];
-        const reader = new FileReader();
+        if (file && file.type === "text/csv") {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                const parsedData = parseCSV(text);
+                processFileData(parsedData);
+            };
+            reader.readAsText(file);
+        } else {
+            alert("Please upload a valid CSV file.");
+        }
+    }
 
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    // Function to parse CSV into an array of arrays
+    function parseCSV(text) {
+        const rows = text.trim().split("\n");
+        return rows.map(row => row.split(","));
+    }
 
-            console.log(sheetData);  // Debugging: Log the parsed sheet data
+    // Process the parsed data
+    function processFileData(sheetData) {
+        console.log(sheetData);  // Debugging: Log the parsed sheet data
 
-            products = [];
-            consignments = {};
-            totalProducts = 0;
-            scannedProducts = 0;
-            previewData = [];
-            allPreviewData = [];
-            runSummaries = [];
-            runCompleteDiv.classList.add("hidden");
+        products = [];
+        consignments = {};
+        totalProducts = 0;
+        scannedProducts = 0;
+        previewData = [];
+        allPreviewData = [];
+        runSummaries = [];
+        runCompleteDiv.classList.add("hidden");
 
-            // Populate previewData and preview table
-            const previewTbody = previewTable.querySelector("tbody");
-            previewTbody.innerHTML = ""; // Clear any existing preview data
-            let currentRun = '';
-            let currentRunTotalWeight = 0;
-            let currentRunTotalFlatpacks = 0;
-            let currentRunTotalChannels = 0;
-            let currentRunTotalFlooring = 0;
-            let runSet = new Set();
+        const previewTbody = previewTable.querySelector("tbody");
+        previewTbody.innerHTML = ""; // Clear any existing preview data
+        let currentRun = '';
+        let currentRunTotalWeight = 0;
+        let currentRunTotalFlatpacks = 0;
+        let currentRunTotalChannels = 0;
+        let currentRunTotalFlooring = 0;
+        let runSet = new Set();
 
-            sheetData.forEach((row, index) => {
-                if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
+        sheetData.forEach((row, index) => {
+            if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
 
-                const runLetter = row[0];
-                const dropNumber = row[1];
-                const location = row[2];
-                const date = formatDate(row[3]); // Format the date
-                const soNumber = row[4];
-                const name = row[5];
-                const address = row[6];
-                const suburb = row[7];
-                const postcode = row[8];
-                const phoneNumber = row[9];
-                const flatpack = row[10] || 0; // Column K
-                const channelBoxCount = row[11] || 0; // Column L
-                const flooringBoxCount = row[12] || 0; // Column M
-                const weight = parseFloat(row[13]) || 0;
-                const description = row[14];
-                const totalCount = flatpack + channelBoxCount + flooringBoxCount;
-                const productNumbers = [];
-                let suffix = 1;
+            const runLetter = row[0];
+            const dropNumber = row[1];
+            const location = row[2];
+            const date = formatDate(row[3]); // Format the date
+            const soNumber = row[4];
+            const name = row[5];
+            const address = row[6];
+            const suburb = row[7];
+            const postcode = row[8];
+            const phoneNumber = row[9];
+            const flatpack = parseInt(row[10]) || 0; // Column K
+            const channelBoxCount = parseInt(row[11]) || 0; // Column L
+            const flooringBoxCount = parseInt(row[12]) || 0; // Column M
+            const weight = parseFloat(row[13]) || 0;
+            const description = row[14];
+            const totalCount = flatpack + channelBoxCount + flooringBoxCount;
+            const productNumbers = [];
+            let suffix = 1;
 
-                for (let i = 0; i < flatpack; i++) {
-                    const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
-                    products.push(productNumber);
-                    productNumbers.push(productNumber);
-                }
+            for (let i = 0; i < flatpack; i++) {
+                const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
+                products.push(productNumber);
+                productNumbers.push(productNumber);
+            }
 
-                for (let i = 0; i < channelBoxCount; i++) {
-                    const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
-                    products.push(productNumber);
-                    productNumbers.push(productNumber);
-                }
+            for (let i = 0; i < channelBoxCount; i++) {
+                const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
+                products.push(productNumber);
+                productNumbers.push(productNumber);
+            }
 
-                for (let i = 0; i < flooringBoxCount; i++) {
-                    const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
-                    products.push(productNumber);
-                    productNumbers.push(productNumber);
-                }
+            for (let i = 0; i < flooringBoxCount; i++) {
+                const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
+                products.push(productNumber);
+                productNumbers.push(productNumber);
+            }
 
-                const consignmentKey = `${runLetter}${dropNumber}${soNumber}`;
-                consignments[consignmentKey] = {
-                    products: productNumbers,
-                    checked: 0,
-                    total: totalCount,
-                    weight,
-                    flatpack,
-                    channelBoxCount,
-                    flooringBoxCount
-                };
+            const consignmentKey = `${runLetter}${dropNumber}${soNumber}`;
+            consignments[consignmentKey] = {
+                products: productNumbers,
+                checked: 0,
+                total: totalCount,
+                weight,
+                flatpack,
+                channelBoxCount,
+                flooringBoxCount
+            };
 
-                totalProducts += totalCount;
+            totalProducts += totalCount;
 
-                const rowData = {
-                    runLetter,
-                    dropNumber,
-                    location,
-                    date,
-                    soNumber,
-                    name,
-                    address,
-                    suburb,
-                    postcode,
-                    phoneNumber,
-                    flatpack,
-                    channelBoxCount,
-                    flooringBoxCount,
-                    weight,
-                    description,
-                    productNumbers,
-                    scannedNumbers: new Set(),
-                    markedOff: false,
-                    notes: ''
-                };
+            const rowData = {
+                runLetter,
+                dropNumber,
+                location,
+                date,
+                soNumber,
+                name,
+                address,
+                suburb,
+                postcode,
+                phoneNumber,
+                flatpack,
+                channelBoxCount,
+                flooringBoxCount,
+                weight,
+                description,
+                productNumbers,
+                scannedNumbers: new Set(),
+                markedOff: false,
+                notes: ''
+            };
 
-                previewData.push(rowData);
-                allPreviewData.push(rowData);
-                runSet.add(runLetter);
+            previewData.push(rowData);
+            allPreviewData.push(rowData);
+            runSet.add(runLetter);
 
-                if (currentRun && currentRun !== runLetter) {
-                    runSummaries.push({
-                        runLetter: currentRun,
-                        totalWeight: currentRunTotalWeight,
-                        flatpacks: currentRunTotalFlatpacks,
-                        channels: currentRunTotalChannels,
-                        flooring: currentRunTotalFlooring,
-                        pallets: (currentRunTotalFlatpacks + currentRunTotalChannels + currentRunTotalFlooring) * 2
-                    });
-
-                    const summaryRow = document.createElement("tr");
-                    summaryRow.classList.add("run-summary");
-                    summaryRow.innerHTML = `
-                        <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
-                    `;
-                    previewTbody.appendChild(summaryRow);
-                    currentRunTotalWeight = 0;
-                    currentRunTotalFlatpacks = 0;
-                    currentRunTotalChannels = 0;
-                    currentRunTotalFlooring = 0;
-                }
-
-                currentRun = runLetter;
-
-                if (flatpack > 0) currentRunTotalFlatpacks += flatpack;
-                if (channelBoxCount > 0) currentRunTotalChannels += channelBoxCount;
-                if (flooringBoxCount > 0) currentRunTotalFlooring += flooringBoxCount;
-                currentRunTotalWeight += weight;
-
-                const rowElement = document.createElement("tr");
-                rowElement.setAttribute('data-index', index);
-                rowElement.innerHTML = `
-                    <td class="run-letter">${runLetter}</td>
-                    <td>${dropNumber}</td>
-                    <td>${location}</td>
-                    <td>${date}</td>
-                    <td>${soNumber}</td>
-                    <td>${name}</td>
-                    <td>${address}</td>
-                    <td>${suburb}</td>
-                    <td>${postcode}</td>
-                    <td>${phoneNumber}</td>
-                    <td>${flatpack}</td>
-                    <td>${channelBoxCount}</td>
-                    <td>${flooringBoxCount}</td>
-                    <td>${weight}</td>
-                    <td>${description}</td>
-                    <td class="status"></td>
-                    <td class="marked-off-status"></td>
-                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
-                `;
-                previewTbody.appendChild(rowElement);
-            });
-
-            // Add final summary row for the last run
-            if (currentRun) {
+            if (currentRun && currentRun !== runLetter) {
                 runSummaries.push({
                     runLetter: currentRun,
                     totalWeight: currentRunTotalWeight,
@@ -299,85 +253,82 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
                 `;
                 previewTbody.appendChild(summaryRow);
+                currentRunTotalWeight = 0;
+                currentRunTotalFlatpacks = 0;
+                currentRunTotalChannels = 0;
+                currentRunTotalFlooring = 0;
             }
 
-            // Populate the run filter dropdown
-            runFilter.innerHTML = '<option value="all">All</option>';
-            runSet.forEach(run => {
-                const option = document.createElement("option");
-                option.value = run;
-                option.textContent = run;
-                runFilter.appendChild(option);
+            currentRun = runLetter;
+
+            if (flatpack > 0) currentRunTotalFlatpacks += flatpack;
+            if (channelBoxCount > 0) currentRunTotalChannels += channelBoxCount;
+            if (flooringBoxCount > 0) currentRunTotalFlooring += flooringBoxCount;
+            currentRunTotalWeight += weight;
+
+            const rowElement = document.createElement("tr");
+            rowElement.setAttribute('data-index', index);
+            rowElement.innerHTML = `
+                <td class="run-letter">${runLetter}</td>
+                <td>${dropNumber}</td>
+                <td>${location}</td>
+                <td>${date}</td>
+                <td>${soNumber}</td>
+                <td>${name}</td>
+                <td>${address}</td>
+                <td>${suburb}</td>
+                <td>${postcode}</td>
+                <td>${phoneNumber}</td>
+                <td>${flatpack}</td>
+                <td>${channelBoxCount}</td>
+                <td>${flooringBoxCount}</td>
+                <td>${weight}</td>
+                <td>${description}</td>
+                <td class="status"></td>
+                <td class="marked-off-status"></td>
+                <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
+            `;
+            previewTbody.appendChild(rowElement);
+        });
+
+        // Add final summary row for the last run
+        if (currentRun) {
+            runSummaries.push({
+                runLetter: currentRun,
+                totalWeight: currentRunTotalWeight,
+                flatpacks: currentRunTotalFlatpacks,
+                channels: currentRunTotalChannels,
+                flooring: currentRunTotalFlooring,
+                pallets: (currentRunTotalFlatpacks + currentRunTotalChannels + currentRunTotalFlooring) * 2
             });
 
-            // Add event listeners to notes inputs
-            document.querySelectorAll('.notes-input').forEach(input => {
-                input.addEventListener('input', handleNotesInput);
-            });
+            const summaryRow = document.createElement("tr");
+            summaryRow.classList.add("run-summary");
+            summaryRow.innerHTML = `
+                <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
+            `;
+            previewTbody.appendChild(summaryRow);
+        }
 
-            // Save data to local storage
-            saveDataToLocalStorage();
+        // Populate the run filter dropdown
+        runFilter.innerHTML = '<option value="all">All</option>';
+        runSet.forEach(run => {
+            const option = document.createElement("option");
+            option.value = run;
+            option.textContent = run;
+            runFilter.appendChild(option);
+        });
 
-            // Display preview data
-            displayPreviewData(previewData);
-        };
+        // Add event listeners to notes inputs
+        document.querySelectorAll('.notes-input').forEach(input => {
+            input.addEventListener('input', handleNotesInput);
+        });
 
-        reader.readAsArrayBuffer(file);
-    }
+        // Save data to local storage
+        saveDataToLocalStorage();
 
-    function handleSavedReportUpload(event) {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-            console.log(sheetData); // Debugging: Log the parsed sheet data
-
-            sheetData.forEach((row, index) => {
-                if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
-
-                const soNumber = row[4];
-                const flatpack = row[10] || 0;
-                const channelBoxCount = row[11] || 0;
-                const flooringBoxCount = row[12] || 0;
-                const status = row[15];
-                const markedOff = row[16] === 'true';
-                const notes = row[17];
-
-                previewData.forEach(previewRow => {
-                    if (previewRow.soNumber === soNumber) {
-                        previewRow.notes = notes;
-
-                        if (status === 'Complete') {
-                            previewRow.scannedNumbers = new Set(previewRow.productNumbers);
-                        }
-
-                        previewRow.markedOff = markedOff;
-                        if (markedOff) {
-                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[17].classList.add("marked-off");
-                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-                        }
-
-                        if (flatpack > 0) previewRow.flatpack = flatpack;
-                        if (channelBoxCount > 0) previewRow.channelBoxCount = channelBoxCount;
-                        if (flooringBoxCount > 0) previewRow.flooringBoxCount = flooringBoxCount;
-                    }
-                });
-            });
-
-            // Update the displayed data
-            displayPreviewData(previewData);
-            saveDataToLocalStorage();
-            checkRunCompletion();
-        };
-
-        reader.readAsArrayBuffer(file);
+        // Display preview data
+        displayPreviewData(previewData);
     }
 
     function formatDate(dateValue) {
