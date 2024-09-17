@@ -1,13 +1,13 @@
-let products = [];
-let consignments = {};
-let totalProducts = 0;
-let scannedProducts = 0;
-let previewData = [];
-let runSummaries = [];
-let allPreviewData = [];
-let zoomLevel = 1;
-
 document.addEventListener("DOMContentLoaded", () => {
+    let products = [];
+    let consignments = {};
+    let totalProducts = 0;
+    let scannedProducts = 0;
+    let previewData = [];
+    let runSummaries = [];
+    let allPreviewData = [];
+    let zoomLevel = 1;
+
     const scanInput = document.getElementById("scan-input");
     const fileInput = document.getElementById("file-input");
     const savedReportInput = document.getElementById("saved-report-input");
@@ -20,16 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const runFilter = document.getElementById("run-filter");
     const modeFilter = document.getElementById("mode-filter");
 
-    // Load data from local storage
+    // Load data from local storage on load
     loadDataFromLocalStorage();
 
-    // Handle file input change
+    // Event listeners for file input and scan input
     fileInput.addEventListener("change", handleFileUpload);
-
-    // Handle saved report file input change
-    savedReportInput.addEventListener("change", handleSavedReportUpload);
-
-    // Handle scan input
     scanInput.addEventListener("keypress", (event) => {
         if (event.key === 'Enter') {
             processScanInput(scanInput.value.trim());
@@ -37,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Handle download report button click
     downloadReportButton.addEventListener("click", () => {
         const isComplete = confirm("Is this complete?");
         if (isComplete) {
@@ -49,12 +43,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Handle mode filter change
     modeFilter.addEventListener("change", () => {
         displayPreviewData(previewData);
     });
 
-    // Zoom in and zoom out functionality
     zoomInButton.addEventListener("click", () => {
         zoomLevel += 0.1;
         previewTable.style.transform = `scale(${zoomLevel})`;
@@ -67,56 +59,43 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Handle scan input processing
     function processScanInput(scannedCode) {
-        if (scannedCode) {
-            let found = false;
-            unknownScanDiv.classList.add("hidden");
-            previewData.forEach((row, index) => {
-                if (row.productNumbers.includes(scannedCode)) {
-                    if (modeFilter.value === "scan") {
-                        row.scannedNumbers.add(scannedCode);
-                        if (row.scannedNumbers.size === row.productNumbers.length) {
-                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[10].classList.add("complete");
-                            rowElement.children[11].classList.add("complete");
-                            rowElement.children[12].classList.add("complete");
-                            rowElement.querySelector('.status').innerHTML = '✅';
-                        }
-                    } else if (modeFilter.value === "mark") {
-                        row.markedOff = true;
-                        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                        rowElement.children[17].classList.add("marked-off");
-                        rowElement.querySelector('.marked-off-status').innerHTML = '✅';
+        if (!scannedCode) return;
+        
+        let found = false;
+        unknownScanDiv.classList.add("hidden");
+
+        previewData.forEach((row, index) => {
+            if (row.productNumbers.includes(scannedCode)) {
+                if (modeFilter.value === "scan") {
+                    row.scannedNumbers.add(scannedCode);
+                    if (row.scannedNumbers.size === row.productNumbers.length) {
+                        markRowComplete(index);
                     }
-                    found = true;
-                    scannedProducts++;
+                } else if (modeFilter.value === "mark") {
+                    row.markedOff = true;
+                    markRowAsMarkedOff(index);
                 }
-            });
-
-            if (found) {
-                scanInput.classList.add("text-green-500");
-                setTimeout(() => {
-                    scanInput.classList.remove("text-green-500");
-                }, 1000);
-                checkRunCompletion();
-                saveDataToLocalStorage();
-            } else {
-                unknownScanDiv.classList.remove("hidden");
-                setTimeout(() => {
-                    unknownScanDiv.classList.add("hidden");
-                }, 3000);
-                scanInput.classList.add("text-red-500");
-                setTimeout(() => {
-                    scanInput.classList.remove("text-red-500");
-                }, 1000);
+                found = true;
+                scannedProducts++;
             }
+        });
 
-            if (scannedProducts === totalProducts) {
-                runCompleteDiv.classList.remove("hidden");
-            }
+        if (found) {
+            feedbackSuccess(scanInput);
+            checkRunCompletion();
+            saveDataToLocalStorage();
+        } else {
+            feedbackError(scanInput, unknownScanDiv);
+        }
+
+        if (scannedProducts === totalProducts) {
+            runCompleteDiv.classList.remove("hidden");
         }
     }
 
+    // Handle file upload and parsing
     function handleFileUpload(event) {
         const file = event.target.files[0];
         const reader = new FileReader();
@@ -128,256 +107,203 @@ document.addEventListener("DOMContentLoaded", () => {
             const sheet = workbook.Sheets[sheetName];
             const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            console.log(sheetData);  // Debugging: Log the parsed sheet data
-
-            products = [];
-            consignments = {};
-            totalProducts = 0;
-            scannedProducts = 0;
-            previewData = [];
-            allPreviewData = [];
-            runSummaries = [];
-            runCompleteDiv.classList.add("hidden");
-
-            // Populate previewData and preview table
-            const previewTbody = previewTable.querySelector("tbody");
-            previewTbody.innerHTML = ""; // Clear any existing preview data
-            let currentRun = '';
-            let currentRunTotalWeight = 0;
-            let currentRunTotalFlatpacks = 0;
-            let currentRunTotalChannels = 0;
-            let currentRunTotalFlooring = 0;
-            let runSet = new Set();
-
-            sheetData.forEach((row, index) => {
-                if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
-
-                const runLetter = row[0];
-                const dropNumber = row[1];
-                const location = row[2];
-                const date = formatDate(row[3]); // Format the date
-                const soNumber = row[4];
-                const name = row[5];
-                const address = row[6];
-                const suburb = row[7];
-                const postcode = row[8];
-                const phoneNumber = row[9];
-                const flatpack = row[10] || 0; // Column K
-                const channelBoxCount = row[11] || 0; // Column L
-                const flooringBoxCount = row[12] || 0; // Column M
-                const weight = parseFloat(row[13]) || 0;
-                const description = row[14];
-                const totalCount = flatpack + channelBoxCount + flooringBoxCount;
-                const productNumbers = [];
-                let suffix = 1;
-
-                for (let i = 0; i < flatpack; i++) {
-                    const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
-                    products.push(productNumber);
-                    productNumbers.push(productNumber);
-                }
-
-                for (let i = 0; i < channelBoxCount; i++) {
-                    const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
-                    products.push(productNumber);
-                    productNumbers.push(productNumber);
-                }
-
-                for (let i = 0; i < flooringBoxCount; i++) {
-                    const productNumber = `${soNumber}${String(suffix++).padStart(3, '0')}`;
-                    products.push(productNumber);
-                    productNumbers.push(productNumber);
-                }
-
-                const consignmentKey = `${runLetter}${dropNumber}${soNumber}`;
-                consignments[consignmentKey] = {
-                    products: productNumbers,
-                    checked: 0,
-                    total: totalCount,
-                    weight,
-                    flatpack,
-                    channelBoxCount,
-                    flooringBoxCount
-                };
-
-                totalProducts += totalCount;
-
-                const rowData = {
-                    runLetter,
-                    dropNumber,
-                    location,
-                    date,
-                    soNumber,
-                    name,
-                    address,
-                    suburb,
-                    postcode,
-                    phoneNumber,
-                    flatpack,
-                    channelBoxCount,
-                    flooringBoxCount,
-                    weight,
-                    description,
-                    productNumbers,
-                    scannedNumbers: new Set(),
-                    markedOff: false,
-                    notes: ''
-                };
-
-                previewData.push(rowData);
-                allPreviewData.push(rowData);
-                runSet.add(runLetter);
-
-                if (currentRun && currentRun !== runLetter) {
-                    runSummaries.push({
-                        runLetter: currentRun,
-                        totalWeight: currentRunTotalWeight,
-                        flatpacks: currentRunTotalFlatpacks,
-                        channels: currentRunTotalChannels,
-                        flooring: currentRunTotalFlooring,
-                        pallets: (currentRunTotalFlatpacks + currentRunTotalChannels + currentRunTotalFlooring) * 2
-                    });
-
-                    const summaryRow = document.createElement("tr");
-                    summaryRow.classList.add("run-summary");
-                    summaryRow.innerHTML = `
-                        <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
-                    `;
-                    previewTbody.appendChild(summaryRow);
-                    currentRunTotalWeight = 0;
-                    currentRunTotalFlatpacks = 0;
-                    currentRunTotalChannels = 0;
-                    currentRunTotalFlooring = 0;
-                }
-
-                currentRun = runLetter;
-
-                if (flatpack > 0) currentRunTotalFlatpacks += flatpack;
-                if (channelBoxCount > 0) currentRunTotalChannels += channelBoxCount;
-                if (flooringBoxCount > 0) currentRunTotalFlooring += flooringBoxCount;
-                currentRunTotalWeight += weight;
-
-                const rowElement = document.createElement("tr");
-                rowElement.setAttribute('data-index', index);
-                rowElement.innerHTML = `
-                    <td class="run-letter">${runLetter}</td>
-                    <td>${dropNumber}</td>
-                    <td>${location}</td>
-                    <td>${date}</td>
-                    <td>${soNumber}</td>
-                    <td>${name}</td>
-                    <td>${address}</td>
-                    <td>${suburb}</td>
-                    <td>${postcode}</td>
-                    <td>${phoneNumber}</td>
-                    <td>${flatpack}</td>
-                    <td>${channelBoxCount}</td>
-                    <td>${flooringBoxCount}</td>
-                    <td>${weight}</td>
-                    <td>${description}</td>
-                    <td class="status"></td>
-                    <td class="marked-off-status"></td>
-                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
-                `;
-                previewTbody.appendChild(rowElement);
-            });
-
-            // Add final summary row for the last run
-            if (currentRun) {
-                runSummaries.push({
-                    runLetter: currentRun,
-                    totalWeight: currentRunTotalWeight,
-                    flatpacks: currentRunTotalFlatpacks,
-                    channels: currentRunTotalChannels,
-                    flooring: currentRunTotalFlooring,
-                    pallets: (currentRunTotalFlatpacks + currentRunTotalChannels + currentRunTotalFlooring) * 2
-                });
-
-                const summaryRow = document.createElement("tr");
-                summaryRow.classList.add("run-summary");
-                summaryRow.innerHTML = `
-                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
-                `;
-                previewTbody.appendChild(summaryRow);
-            }
-
-            // Populate the run filter dropdown
-            runFilter.innerHTML = '<option value="all">All</option>';
-            runSet.forEach(run => {
-                const option = document.createElement("option");
-                option.value = run;
-                option.textContent = run;
-                runFilter.appendChild(option);
-            });
-
-            // Add event listeners to notes inputs
-            document.querySelectorAll('.notes-input').forEach(input => {
-                input.addEventListener('input', handleNotesInput);
-            });
-
-            // Save data to local storage
-            saveDataToLocalStorage();
-
-            // Display preview data
-            displayPreviewData(previewData);
+            resetChecklistData();
+            parseSheetData(sheetData);
         };
 
         reader.readAsArrayBuffer(file);
     }
 
-    function handleSavedReportUpload(event) {
-        const file = event.target.files[0];
-        const reader = new FileReader();
+    // Parse sheet data and populate table
+    function parseSheetData(sheetData) {
+        const previewTbody = previewTable.querySelector("tbody");
+        previewTbody.innerHTML = ""; // Clear existing preview data
+        let currentRun = '';
+        let currentRunTotalWeight = 0;
+        let currentRunTotalFlatpacks = 0;
+        let currentRunTotalChannels = 0;
+        let currentRunTotalFlooring = 0;
+        let runSet = new Set();
 
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        sheetData.forEach((row, index) => {
+            if (row.length < 15 || !row[4]) return; // Skip rows with insufficient data or no SO Number
 
-            console.log(sheetData); // Debugging: Log the parsed sheet data
+            const rowData = extractRowData(row);
+            products.push(...rowData.productNumbers);
+            previewData.push(rowData);
+            allPreviewData.push(rowData);
+            runSet.add(rowData.runLetter);
 
-            sheetData.forEach((row, index) => {
-                if (index === 0 || !row[4]) return; // Skip header row and rows with no SO Number
+            totalProducts += rowData.totalCount;
 
-                const soNumber = row[4];
-                const flatpack = row[10] || 0;
-                const channelBoxCount = row[11] || 0;
-                const flooringBoxCount = row[12] || 0;
-                const status = row[15];
-                const markedOff = row[16] === 'true';
-                const notes = row[17];
+            if (currentRun && currentRun !== rowData.runLetter) {
+                addRunSummary(currentRun, currentRunTotalWeight, currentRunTotalFlatpacks, currentRunTotalChannels, currentRunTotalFlooring);
+                currentRunTotalWeight = currentRunTotalFlatpacks = currentRunTotalChannels = currentRunTotalFlooring = 0;
+            }
 
-                previewData.forEach(previewRow => {
-                    if (previewRow.soNumber === soNumber) {
-                        previewRow.notes = notes;
+            currentRun = rowData.runLetter;
+            currentRunTotalFlatpacks += rowData.flatpack;
+            currentRunTotalChannels += rowData.channelBoxCount;
+            currentRunTotalFlooring += rowData.flooringBoxCount;
+            currentRunTotalWeight += rowData.weight;
 
-                        if (status === 'Complete') {
-                            previewRow.scannedNumbers = new Set(previewRow.productNumbers);
-                        }
+            appendRowToTable(rowData, index);
+        });
 
-                        previewRow.markedOff = markedOff;
-                        if (markedOff) {
-                            const rowElement = document.querySelector(`tr[data-index="${index}"]`);
-                            rowElement.children[17].classList.add("marked-off");
-                            rowElement.querySelector('.marked-off-status').innerHTML = '✅';
-                        }
+        if (currentRun) {
+            addRunSummary(currentRun, currentRunTotalWeight, currentRunTotalFlatpacks, currentRunTotalChannels, currentRunTotalFlooring);
+        }
 
-                        if (flatpack > 0) previewRow.flatpack = flatpack;
-                        if (channelBoxCount > 0) previewRow.channelBoxCount = channelBoxCount;
-                        if (flooringBoxCount > 0) previewRow.flooringBoxCount = flooringBoxCount;
-                    }
-                });
-            });
+        populateRunFilter(runSet);
+        saveDataToLocalStorage();
+        displayPreviewData(previewData);
+    }
 
-            // Update the displayed data
-            displayPreviewData(previewData);
-            saveDataToLocalStorage();
-            checkRunCompletion();
+    // Extract relevant data from a row
+    function extractRowData(row) {
+        const runLetter = row[0];
+        const dropNumber = row[1];
+        const location = row[2];
+        const date = formatDate(row[3]);
+        const soNumber = row[4];
+        const name = row[5];
+        const address = row[6];
+        const suburb = row[7];
+        const postcode = row[8];
+        const phoneNumber = row[9];
+        const flatpack = row[10] || 0;
+        const channelBoxCount = row[11] || 0;
+        const flooringBoxCount = row[12] || 0;
+        const weight = parseFloat(row[13]) || 0;
+        const description = row[14];
+        const totalCount = flatpack + channelBoxCount + flooringBoxCount;
+        const productNumbers = generateProductNumbers(soNumber, flatpack, channelBoxCount, flooringBoxCount);
+
+        const consignmentKey = `${runLetter}${dropNumber}${soNumber}`;
+        consignments[consignmentKey] = {
+            products: productNumbers,
+            checked: 0,
+            total: totalCount,
+            weight,
+            flatpack,
+            channelBoxCount,
+            flooringBoxCount
         };
 
-        reader.readAsArrayBuffer(file);
+        return {
+            runLetter,
+            dropNumber,
+            location,
+            date,
+            soNumber,
+            name,
+            address,
+            suburb,
+            postcode,
+            phoneNumber,
+            flatpack,
+            channelBoxCount,
+            flooringBoxCount,
+            weight,
+            description,
+            productNumbers,
+            scannedNumbers: new Set(),
+            markedOff: false,
+            notes: ''
+        };
+    }
+
+    // Generate product numbers based on SO number
+    function generateProductNumbers(soNumber, flatpack, channelBoxCount, flooringBoxCount) {
+        const productNumbers = [];
+        let suffix = 1;
+
+        for (let i = 0; i < flatpack; i++) {
+            productNumbers.push(`${soNumber}${String(suffix++).padStart(3, '0')}`);
+        }
+        for (let i = 0; i < channelBoxCount; i++) {
+            productNumbers.push(`${soNumber}${String(suffix++).padStart(3, '0')}`);
+        }
+        for (let i = 0; i < flooringBoxCount; i++) {
+            productNumbers.push(`${soNumber}${String(suffix++).padStart(3, '0')}`);
+        }
+
+        return productNumbers;
+    }
+
+    // Append row to the preview table
+    function appendRowToTable(rowData, index) {
+        const previewTbody = previewTable.querySelector("tbody");
+        const rowElement = document.createElement("tr");
+        rowElement.setAttribute('data-index', index);
+        rowElement.innerHTML = `
+            <td class="run-letter">${rowData.runLetter}</td>
+            <td>${rowData.dropNumber}</td>
+            <td>${rowData.location}</td>
+            <td>${rowData.date}</td>
+            <td>${rowData.soNumber}</td>
+            <td>${rowData.name}</td>
+            <td>${rowData.address}</td>
+            <td>${rowData.suburb}</td>
+            <td>${rowData.postcode}</td>
+            <td>${rowData.phoneNumber}</td>
+            <td>${rowData.flatpack}</td>
+            <td>${rowData.channelBoxCount}</td>
+            <td>${rowData.flooringBoxCount}</td>
+            <td>${rowData.weight}</td>
+            <td>${rowData.description}</td>
+            <td class="status"></td>
+            <td class="marked-off-status"></td>
+            <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" /></td>
+        `;
+        previewTbody.appendChild(rowElement);
+    }
+
+    // Add run summary row
+    function addRunSummary(runLetter, totalWeight, flatpacks, channels, flooring) {
+        runSummaries.push({
+            runLetter,
+            totalWeight,
+            flatpacks,
+            channels,
+            flooring,
+            pallets: (flatpacks + channels + flooring) * 2
+        });
+
+        const previewTbody = previewTable.querySelector("tbody");
+        const summaryRow = document.createElement("tr");
+        summaryRow.classList.add("run-summary");
+        summaryRow.innerHTML = `
+            <td colspan="18"><strong>Run ${runLetter}</strong> - Total Weight: ${totalWeight} kg, Flatpacks: ${flatpacks}, Channels: ${channels}, Flooring: ${flooring}</td>
+        `;
+        previewTbody.appendChild(summaryRow);
+    }
+
+    // Utility Functions
+    function markRowComplete(index) {
+        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+        rowElement.querySelector('.status').innerHTML = '✅';
+        rowElement.children[10].classList.add("complete");
+        rowElement.children[11].classList.add("complete");
+        rowElement.children[12].classList.add("complete");
+    }
+
+    function markRowAsMarkedOff(index) {
+        const rowElement = document.querySelector(`tr[data-index="${index}"]`);
+        rowElement.querySelector('.marked-off-status').innerHTML = '✅';
+        rowElement.children[17].classList.add("marked-off");
+    }
+
+    function feedbackSuccess(input) {
+        input.classList.add("text-green-500");
+        setTimeout(() => input.classList.remove("text-green-500"), 1000);
+    }
+
+    function feedbackError(input, errorDiv) {
+        errorDiv.classList.remove("hidden");
+        setTimeout(() => errorDiv.classList.add("hidden"), 3000);
+        input.classList.add("text-red-500");
+        setTimeout(() => input.classList.remove("text-red-500"), 1000);
     }
 
     function formatDate(dateValue) {
@@ -385,10 +311,57 @@ document.addEventListener("DOMContentLoaded", () => {
         return isNaN(date.getTime()) ? dateValue : date.toLocaleDateString();
     }
 
-    function handleNotesInput(event) {
-        const index = event.target.getAttribute('data-index');
-        previewData[index].notes = event.target.value;
-        saveDataToLocalStorage();
+    function populateRunFilter(runSet) {
+        runFilter.innerHTML = '<option value="all">All</option>';
+        runSet.forEach(run => {
+            const option = document.createElement("option");
+            option.value = run;
+            option.textContent = run;
+            runFilter.appendChild(option);
+        });
+    }
+
+    // Data persistence and management
+    function saveDataToLocalStorage() {
+        const data = {
+            products,
+            consignments,
+            totalProducts,
+            scannedProducts,
+            previewData,
+            runSummaries,
+            allPreviewData
+        };
+        localStorage.setItem('checklistData', JSON.stringify(data));
+    }
+
+    function loadDataFromLocalStorage() {
+        const data = JSON.parse(localStorage.getItem('checklistData'));
+        if (data) {
+            products = data.products;
+            consignments = data.consignments;
+            totalProducts = data.totalProducts;
+            scannedProducts = data.scannedProducts;
+            previewData = data.previewData;
+            runSummaries = data.runSummaries;
+            allPreviewData = data.allPreviewData;
+
+            displayPreviewData(previewData);
+            checkRunCompletion();
+        }
+    }
+
+    function clearChecklistData() {
+        products = [];
+        consignments = {};
+        totalProducts = 0;
+        scannedProducts = 0;
+        previewData = [];
+        runSummaries = [];
+        allPreviewData = [];
+        localStorage.removeItem('checklistData');
+        const previewTbody = previewTable.querySelector("tbody");
+        previewTbody.innerHTML = "";
     }
 
     function checkRunCompletion() {
@@ -404,47 +377,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
         });
-
         updateSummary();
     }
 
     function updateSummary() {
         const summaryRows = document.querySelectorAll('.run-summary');
         summaryRows.forEach(row => row.remove());
-
-        const previewTbody = document.querySelector('#preview-table tbody');
         let currentRun = '';
         let currentRunTotalWeight = 0;
         let currentRunTotalFlatpacks = 0;
         let currentRunTotalChannels = 0;
         let currentRunTotalFlooring = 0;
 
-        previewData.forEach((row, index) => {
-            const runLetter = row.runLetter;
-
-            if (currentRun && currentRun !== runLetter) {
-                runSummaries.push({
-                    runLetter: currentRun,
-                    totalWeight: currentRunTotalWeight,
-                    flatpacks: currentRunTotalFlatpacks,
-                    channels: currentRunTotalChannels,
-                    flooring: currentRunTotalFlooring,
-                    pallets: (currentRunTotalFlatpacks + currentRunTotalChannels + currentRunTotalFlooring) * 2
-                });
-
-                const summaryRow = document.createElement("tr");
-                summaryRow.classList.add("run-summary");
-                summaryRow.innerHTML = `
-                    <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
-                `;
-                previewTbody.appendChild(summaryRow);
-                currentRunTotalWeight = 0;
-                currentRunTotalFlatpacks = 0;
-                currentRunTotalChannels = 0;
-                currentRunTotalFlooring = 0;
+        previewData.forEach((row) => {
+            if (currentRun && currentRun !== row.runLetter) {
+                addRunSummary(currentRun, currentRunTotalWeight, currentRunTotalFlatpacks, currentRunTotalChannels, currentRunTotalFlooring);
+                currentRunTotalWeight = currentRunTotalFlatpacks = currentRunTotalChannels = currentRunTotalFlooring = 0;
             }
 
-            currentRun = runLetter;
+            currentRun = row.runLetter;
 
             if (row.scannedNumbers.size === row.productNumbers.length) {
                 currentRunTotalFlatpacks += row.flatpack;
@@ -455,24 +406,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (currentRun) {
-            runSummaries.push({
-                runLetter: currentRun,
-                totalWeight: currentRunTotalWeight,
-                flatpacks: currentRunTotalFlatpacks,
-                channels: currentRunTotalChannels,
-                flooring: currentRunTotalFlooring,
-                pallets: (currentRunTotalFlatpacks + currentRunTotalChannels + currentRunTotalFlooring) * 2
-            });
-
-            const summaryRow = document.createElement("tr");
-            summaryRow.classList.add("run-summary");
-            summaryRow.innerHTML = `
-                <td colspan="18"><strong>Run ${currentRun}</strong> - Total Weight: ${currentRunTotalWeight} kg, Flatpacks: ${currentRunTotalFlatpacks}, Channels: ${currentRunTotalChannels}, Flooring: ${currentRunTotalFlooring}</td>
-            `;
-            previewTbody.appendChild(summaryRow);
+            addRunSummary(currentRun, currentRunTotalWeight, currentRunTotalFlatpacks, currentRunTotalChannels, currentRunTotalFlooring);
         }
-
-        // Save updated data to local storage
         saveDataToLocalStorage();
     }
 
@@ -481,53 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
         previewTbody.innerHTML = ""; // Clear existing preview data
 
         data.forEach((row, index) => {
-            const rowElement = document.createElement("tr");
-            rowElement.setAttribute('data-index', index);
-            rowElement.innerHTML = `
-                <td class="run-letter">${row.runLetter}</td>
-                <td>${row.dropNumber}</td>
-                <td>${row.location}</td>
-                <td>${row.date}</td>
-                <td>${row.soNumber}</td>
-                <td>${row.name}</td>
-                <td>${row.address}</td>
-                <td>${row.suburb}</td>
-                <td>${row.postcode}</td>
-                <td>${row.phoneNumber}</td>
-                <td>${row.flatpack}</td>
-                <td>${row.channelBoxCount}</td>
-                <td>${row.flooringBoxCount}</td>
-                <td>${row.weight}</td>
-                <td>${row.description}</td>
-                <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-                <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-                <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
-            `;
-            if (row.scannedNumbers.size === row.productNumbers.length) {
-                rowElement.children[10].classList.add("complete");
-                rowElement.children[11].classList.add("complete");
-                rowElement.children[12].classList.add("complete");
-            }
-            if (row.markedOff) {
-                rowElement.children[17].classList.add("marked-off");
-            }
-            previewTbody.appendChild(rowElement);
+            appendRowToTable(row, index);
         });
-
-        // Add event listeners to notes inputs
-        document.querySelectorAll('.notes-input').forEach(input => {
-            input.addEventListener('input', handleNotesInput);
-        });
-    }
-
-    function filterByRun() {
-        const selectedRun = runFilter.value;
-        if (selectedRun === "all") {
-            displayPreviewData(allPreviewData);
-        } else {
-            const filteredData = allPreviewData.filter(row => row.runLetter === selectedRun);
-            displayPreviewData(filteredData);
-        }
     }
 
     function downloadReport(reportName) {
@@ -558,8 +448,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Flatpacks: summary.flatpacks,
             Channels: summary.channels,
             Flooring: summary.flooring,
-            Pallets: summary.pallets,
-            Notes: summary.notes || ''
+            Pallets: summary.pallets
         }));
 
         const now = new Date();
@@ -572,93 +461,5 @@ document.addEventListener("DOMContentLoaded", () => {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
         XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
         XLSX.writeFile(workbook, `${reportName}_${now.toISOString().split('T')[0]}.xlsx`);
-    }
-
-    function clearChecklistData() {
-        // Clear data arrays
-        products = [];
-        consignments = {};
-        totalProducts = 0;
-        scannedProducts = 0;
-        previewData = [];
-        runSummaries = [];
-        allPreviewData = [];
-
-        // Clear local storage
-        localStorage.removeItem('checklistData');
-
-        // Clear the preview table
-        const previewTbody = previewTable.querySelector("tbody");
-        previewTbody.innerHTML = "";
-    }
-
-    function saveDataToLocalStorage() {
-        const data = {
-            products,
-            consignments,
-            totalProducts,
-            scannedProducts,
-            previewData,
-            runSummaries,
-            allPreviewData
-        };
-        localStorage.setItem('checklistData', JSON.stringify(data));
-    }
-
-    function loadDataFromLocalStorage() {
-        const data = JSON.parse(localStorage.getItem('checklistData'));
-        if (data) {
-            products = data.products;
-            consignments = data.consignments;
-            totalProducts = data.totalProducts;
-            scannedProducts = data.scannedProducts;
-            previewData = data.previewData;
-            runSummaries = data.runSummaries;
-            allPreviewData = data.allPreviewData;
-
-            const previewTbody = previewTable.querySelector("tbody");
-            previewTbody.innerHTML = ""; // Clear any existing preview data
-
-            previewData.forEach((row, index) => {
-                const rowElement = document.createElement("tr");
-                rowElement.setAttribute('data-index', index);
-                rowElement.innerHTML = `
-                    <td class="run-letter">${row.runLetter}</td>
-                    <td>${row.dropNumber}</td>
-                    <td>${row.location}</td>
-                    <td>${row.date}</td>
-                    <td>${row.soNumber}</td>
-                    <td>${row.name}</td>
-                    <td>${row.address}</td>
-                    <td>${row.suburb}</td>
-                    <td>${row.postcode}</td>
-                    <td>${row.phoneNumber}</td>
-                    <td>${row.flatpack}</td>
-                    <td>${row.channelBoxCount}</td>
-                    <td>${row.flooringBoxCount}</td>
-                    <td>${row.weight}</td>
-                    <td>${row.description}</td>
-                    <td class="status">${row.scannedNumbers.size === row.productNumbers.length ? '✅' : ''}</td>
-                    <td class="marked-off-status">${row.markedOff ? '✅' : ''}</td>
-                    <td><input type="text" class="notes-input border p-1 w-full text-black" data-index="${index}" value="${row.notes}" /></td>
-                `;
-                if (row.scannedNumbers.size === row.productNumbers.length) {
-                    rowElement.children[10].classList.add("complete");
-                    rowElement.children[11].classList.add("complete");
-                    rowElement.children[12].classList.add("complete");
-                }
-                if (row.markedOff) {
-                    rowElement.children[17].classList.add("marked-off");
-                }
-                previewTbody.appendChild(rowElement);
-            });
-
-            // Add event listeners to notes inputs
-            document.querySelectorAll('.notes-input').forEach(input => {
-                input.addEventListener('input', handleNotesInput);
-            });
-
-            checkRunCompletion();
-        }
     }
 });
