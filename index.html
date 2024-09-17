@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Product Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> <!-- Include XLSX Library -->
 </head>
 <body class="bg-gray-50 text-gray-800">
     <div class="container mx-auto p-6">
@@ -22,7 +23,7 @@
             </div>
 
             <div class="flex items-center space-x-4">
-                <input id="file-input" type="file" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input id="file-input" type="file" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" accept=".xlsx, .xls">
                 <button class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">Upload File</button>
             </div>
         </div>
