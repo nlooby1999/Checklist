@@ -13,14 +13,12 @@
         h1 {
             text-align: center;
         }
-        .file-input, .scanner-input, .toggle-btn {
+        .file-input, .scanner-input, .toggle-btn, .clear-btn, .report-btn {
             display: block;
             margin: 10px auto;
             padding: 10px;
             font-size: 18px;
             width: 80%;
-        }
-        .toggle-btn {
             cursor: pointer;
             text-align: center;
             border: 2px solid #333;
@@ -57,6 +55,11 @@
     <input type="text" id="scannerInput" class="scanner-input" placeholder="Scan barcode here" disabled autofocus>
     <!-- Toggle Button for Modes -->
     <div id="toggleMode" class="toggle-btn">Mode: Mark Off</div>
+    <!-- Clear Checklist Button -->
+    <div id="clearChecklist" class="clear-btn">Clear Checklist</div>
+    <!-- Download Report Button -->
+    <div id="downloadReport" class="report-btn">Download Report</div>
+    
     <div id="tableContainer"></div>
 
     <!-- Load the Excel processing library -->
@@ -66,6 +69,8 @@
         const scannerInput = document.getElementById('scannerInput');
         const tableContainer = document.getElementById('tableContainer');
         const toggleModeBtn = document.getElementById('toggleMode');
+        const clearChecklistBtn = document.getElementById('clearChecklist');
+        const downloadReportBtn = document.getElementById('downloadReport');
         let mode = 'Mark Off'; // Default mode
         let tableData = [];
         let generatedBarcodes = {}; // Store barcodes for each sales order
@@ -174,18 +179,41 @@
             }
         }
 
-        // Listen for barcode scanner input
-        scannerInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                const barcode = scannerInput.value.trim();
-                if (barcode) {
-                    handleScan(barcode);
-                    scannerInput.value = ''; // Clear input field
-                }
+        // Clear checklist
+        clearChecklistBtn.addEventListener('click', function() {
+            const confirmed = confirm("Are you sure you want to clear the checklist?");
+            if (confirmed) {
+                tableContainer.innerHTML = ''; // Clear the table
+                generatedBarcodes = {};
+                scannedBoxes = {};
+                tableData = [];
+                localStorage.clear(); // Clear saved state if using localStorage
             }
         });
 
-    </script>
+        // Download checked-off consignments report
+        downloadReportBtn.addEventListener('click', function() {
+            const completedOrders = [];
 
-</body>
-</html>
+            // Loop through tableData to find completed consignments
+            tableData.slice(1).forEach((row, index) => {
+                const salesOrder = row[4]; // Sales Order column
+                if (scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
+                    completedOrders.push(row);
+                }
+            });
+
+            if (completedOrders.length > 0) {
+                const headers = ["Run", "Drop", "Zone", "Date", "Sales Order", "Name", "Address", "Suburb", "Postcode", "Phone Number", "FP", "CH", "FL", "Weight", "Type"];
+                let csvContent = "data:text/csv;charset=utf-8,";
+
+                // Add headers
+                csvContent += headers.join(",") + "\n";
+
+                // Add rows of completed consignments
+                completedOrders.forEach(row => {
+                    csvContent += row.join(",") + "\n";
+                });
+
+                // Create a link element to download the CSV
+               
