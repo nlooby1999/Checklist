@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner with Box Tracking</title>
+    <title>Barcode Scanner with Mark Off & Check Off Modes</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,12 +13,18 @@
         h1 {
             text-align: center;
         }
-        .file-input, .scanner-input {
+        .file-input, .scanner-input, .toggle-btn {
             display: block;
             margin: 10px auto;
             padding: 10px;
             font-size: 18px;
             width: 80%;
+        }
+        .toggle-btn {
+            cursor: pointer;
+            text-align: center;
+            border: 2px solid #333;
+            background-color: #ddd;
         }
         table {
             width: 100%;
@@ -43,12 +49,14 @@
 </head>
 <body>
 
-    <h1>Barcode Scanner with Box Tracking</h1>
+    <h1>Barcode Scanner with Mark Off & Check Off Modes</h1>
 
     <!-- File Upload -->
     <input type="file" id="excelFile" class="file-input" accept=".xlsx, .xls">
     <!-- Barcode Scanner Input -->
     <input type="text" id="scannerInput" class="scanner-input" placeholder="Scan barcode here" disabled autofocus>
+    <!-- Toggle Button for Modes -->
+    <div id="toggleMode" class="toggle-btn">Mode: Mark Off</div>
     <div id="tableContainer"></div>
 
     <!-- Load the Excel processing library -->
@@ -57,9 +65,17 @@
         const excelFileInput = document.getElementById('excelFile');
         const scannerInput = document.getElementById('scannerInput');
         const tableContainer = document.getElementById('tableContainer');
+        const toggleModeBtn = document.getElementById('toggleMode');
+        let mode = 'Mark Off'; // Default mode
         let tableData = [];
         let generatedBarcodes = {}; // Store barcodes for each sales order
         let scannedBoxes = {}; // Store scanned box counts for each sales order
+
+        // Toggle between Mark Off and Check Off modes
+        toggleModeBtn.addEventListener('click', () => {
+            mode = mode === 'Mark Off' ? 'Check Off' : 'Mark Off';
+            toggleModeBtn.textContent = `Mode: ${mode}`;
+        });
 
         // Function to handle file input change
         excelFileInput.addEventListener('change', function(event) {
@@ -142,10 +158,10 @@
                     const rowIndex = tableData.findIndex(row => row[4] === salesOrder); // Column 4 is Sales Order
                     if (rowIndex !== -1) {
                         scannedBoxes[salesOrder] += 1; // Increment the scanned box count
-                        document.getElementById(`row-${rowIndex - 1}`).classList.add('matched'); // Highlight matched row
-                        
-                        // If all boxes are scanned, mark the row as complete
-                        if (scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
+
+                        if (mode === 'Mark Off') {
+                            document.getElementById(`row-${rowIndex - 1}`).classList.add('matched'); // Highlight individual boxes
+                        } else if (mode === 'Check Off' && scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
                             document.getElementById(`row-${rowIndex - 1}`).classList.add('completed'); // Mark row as completed
                         }
                     }
