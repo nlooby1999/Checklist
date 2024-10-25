@@ -94,7 +94,8 @@
             data.slice(1).forEach((row, index) => {
                 table += `<tr id="row-${index}">`;
                 row.forEach(cell => {
-                    table += `<td>${cell || ''}</td>`; // Add each cell in the row
+                    // Replace blank cells with a dash
+                    table += `<td>${cell || '-'}</td>`; // Display dash if cell is empty
                 });
                 table += '</tr>';
             });
