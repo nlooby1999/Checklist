@@ -1,684 +1,1281 @@
-diff --git a/index.html b/index.html
-index 6f0579ef24e0fb6e79470bba6a9a97c20e591bc3..54a33700a65f25bf483bbfb703db2b958389864a 100644
---- a/index.html
-+++ b/index.html
-@@ -1,219 +1,460 @@
--<!DOCTYPE html>
--<html lang="en">
--<head>
--    <meta charset="UTF-8">
--    <meta name="viewport" content="width=device-width, initial-scale=1.0">
--    <title>Barcode Scanner with Mark Off & Check Off Modes</title>
--    <style>
--        body {
--            font-family: Arial, sans-serif;
--            margin: 20px;
--            background-color: #f4f4f4;
--        }
--        h1 {
--            text-align: center;
--        }
--        .file-input, .scanner-input, .toggle-btn, .clear-btn, .report-btn {
--            display: block;
--            margin: 10px auto;
--            padding: 10px;
--            font-size: 18px;
--            width: 80%;
--            cursor: pointer;
--            text-align: center;
--            border: 2px solid #333;
--            background-color: #ddd;
--        }
--        table {
--            width: 100%;
--            border-collapse: collapse;
--            margin-top: 20px;
--        }
--        table, th, td {
--            border: 1px solid black;
--        }
--        th, td {
--            padding: 10px;
--            text-align: center;
--        }
--        .matched {
--            background-color: #90EE90; /* Light green for matched row */
--        }
--        .completed {
--            background-color: #32CD32; /* Darker green for completed row */
--            color: white;
--        }
--    </style>
--</head>
--<body>
--
--    <h1>Barcode Scanner with Mark Off & Check Off Modes</h1>
--
--    <!-- File Upload -->
--    <input type="file" id="excelFile" class="file-input" accept=".xlsx, .xls">
--    <!-- Barcode Scanner Input -->
--    <input type="text" id="scannerInput" class="scanner-input" placeholder="Scan barcode here" disabled autofocus>
--    <!-- Toggle Button for Modes -->
--    <div id="toggleMode" class="toggle-btn">Mode: Mark Off</div>
--    <!-- Clear Checklist Button -->
--    <div id="clearChecklist" class="clear-btn">Clear Checklist</div>
--    <!-- Download Report Button -->
--    <div id="downloadReport" class="report-btn">Download Report</div>
--    
--    <div id="tableContainer"></div>
--
--    <!-- Load the Excel processing library -->
--    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
--    <script>
--        const excelFileInput = document.getElementById('excelFile');
--        const scannerInput = document.getElementById('scannerInput');
--        const tableContainer = document.getElementById('tableContainer');
--        const toggleModeBtn = document.getElementById('toggleMode');
--        const clearChecklistBtn = document.getElementById('clearChecklist');
--        const downloadReportBtn = document.getElementById('downloadReport');
--        let mode = 'Mark Off'; // Default mode
--        let tableData = [];
--        let generatedBarcodes = {}; // Store barcodes for each sales order
--        let scannedBoxes = {}; // Store scanned box counts for each sales order
--
--        // Toggle between Mark Off and Check Off modes
--        toggleModeBtn.addEventListener('click', () => {
--            mode = mode === 'Mark Off' ? 'Check Off' : 'Mark Off';
--            toggleModeBtn.textContent = `Mode: ${mode}`;
--        });
--
--        // Function to handle file input change
--        excelFileInput.addEventListener('change', function(event) {
--            const file = event.target.files[0];
--            const reader = new FileReader();
--            reader.onload = function(e) {
--                const data = new Uint8Array(e.target.result);
--                const workbook = XLSX.read(data, { type: 'array' });
--                const firstSheetName = workbook.SheetNames[0];
--                const worksheet = workbook.Sheets[firstSheetName];
--                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
--                tableData = json; // Store data for matching later
--                displayTable(json);
--                generateBarcodes(json);
--                scannerInput.disabled = false; // Enable barcode input after table is displayed
--            };
--            reader.readAsArrayBuffer(file);
--        });
--
--        // Function to display the table with Excel data
--        function displayTable(data) {
--            let table = '<table><thead><tr>';
--            const headers = ["Run", "Drop", "Zone", "Date", "Sales Order", "Name", "Address", "Suburb", "Postcode", "Phone Number", "FP", "CH", "FL", "Weight", "Type"];
--            
--            // Add headers
--            headers.forEach(header => {
--                table += `<th>${header}</th>`;
--            });
--            table += '</tr></thead><tbody>';
--
--            // Add rows from data
--            data.slice(1).forEach((row, index) => {
--                table += `<tr id="row-${index}">`;
--                row.forEach(cell => {
--                    // Replace blank cells with a dash
--                    table += `<td>${cell || '-'}</td>`; // Display dash if cell is empty
--                });
--                table += '</tr>';
--            });
--            table += '</tbody></table>';
--            tableContainer.innerHTML = table;
--        }
--
--        // Function to generate barcodes with box numbers appended
--        function generateBarcodes(data) {
--            const salesOrderColumnIndex = 4; // Column E is the Sales Order (index 4)
--            const fpColumnIndex = 10; // Column K (index 10)
--            const chColumnIndex = 11; // Column L (index 11)
--            const flColumnIndex = 12; // Column M (index 12)
--            
--            data.slice(1).forEach((row, index) => {
--                const salesOrder = row[salesOrderColumnIndex];
--                const fp = parseInt(row[fpColumnIndex]) || 0;
--                const ch = parseInt(row[chColumnIndex]) || 0;
--                const fl = parseInt(row[flColumnIndex]) || 0;
--                
--                const totalBoxes = fp + ch + fl;
--                scannedBoxes[salesOrder] = 0; // Initialize scanned boxes for this sales order
--                
--                // Generate barcodes with ascending box numbers (e.g., SO123456001, SO123456002, etc.)
--                for (let i = 1; i <= totalBoxes; i++) {
--                    const boxNumber = String(i).padStart(3, '0'); // Ensure 3-digit format
--                    const barcode = `${salesOrder}${boxNumber}`;
--                    if (!generatedBarcodes[salesOrder]) {
--                        generatedBarcodes[salesOrder] = [];
--                    }
--                    generatedBarcodes[salesOrder].push(barcode);
--                }
--            });
--        }
--
--        // Function to handle barcode scanning
--        function handleScan(barcode) {
--            let matched = false;
--            
--            // Loop through generated barcodes to find a match for the scanned barcode
--            Object.keys(generatedBarcodes).forEach((salesOrder, index) => {
--                if (generatedBarcodes[salesOrder].includes(barcode)) {
--                    // Find the row with the matching sales order
--                    const rowIndex = tableData.findIndex(row => row[4] === salesOrder); // Column 4 is Sales Order
--                    if (rowIndex !== -1) {
--                        scannedBoxes[salesOrder] += 1; // Increment the scanned box count
--
--                        if (mode === 'Mark Off') {
--                            document.getElementById(`row-${rowIndex - 1}`).classList.add('matched'); // Highlight individual boxes
--                        } else if (mode === 'Check Off' && scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
--                            document.getElementById(`row-${rowIndex - 1}`).classList.add('completed'); // Mark row as completed
--                        }
--                    }
--                    matched = true;
--                }
--            });
--
--            if (!matched) {
--                alert('Sales Order not found or barcode invalid');
--            }
--        }
--
--        // Clear checklist
--        clearChecklistBtn.addEventListener('click', function() {
--            const confirmed = confirm("Are you sure you want to clear the checklist?");
--            if (confirmed) {
--                tableContainer.innerHTML = ''; // Clear the table
--                generatedBarcodes = {};
--                scannedBoxes = {};
--                tableData = [];
--                localStorage.clear(); // Clear saved state if using localStorage
--            }
--        });
--
--        // Download checked-off consignments report
--        downloadReportBtn.addEventListener('click', function() {
--            const completedOrders = [];
--
--            // Loop through tableData to find completed consignments
--            tableData.slice(1).forEach((row, index) => {
--                const salesOrder = row[4]; // Sales Order column
--                if (scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
--                    completedOrders.push(row);
--                }
--            });
--
--            if (completedOrders.length > 0) {
--                const headers = ["Run", "Drop", "Zone", "Date", "Sales Order", "Name", "Address", "Suburb", "Postcode", "Phone Number", "FP", "CH", "FL", "Weight", "Type"];
--                let csvContent = "data:text/csv;charset=utf-8,";
--
--                // Add headers
--                csvContent += headers.join(",") + "\n";
--
--                // Add rows of completed consignments
--                completedOrders.forEach(row => {
--                    csvContent += row.join(",") + "\n";
--                });
--
--                // Create a link element to download the CSV
--               
-+<!DOCTYPE html>
-+<html lang="en">
-+<head>
-+    <meta charset="UTF-8">
-+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-+    <title>Barcode Scanner with Mark Off & Check Off Modes</title>
-+    <style>
-+        :root {
-+            color-scheme: light;
-+            --surface: #ffffff;
-+            --surface-muted: #f3f6fb;
-+            --accent: #2563eb;
-+            --accent-dark: #1d4ed8;
-+            --text: #1f2937;
-+            --text-subtle: #4b5563;
-+            --border: #d1d9e6;
-+            --success: #22c55e;
-+            --success-soft: rgba(34, 197, 94, 0.18);
-+            --matched: rgba(59, 130, 246, 0.18);
-+        }
-+
-+        * {
-+            box-sizing: border-box;
-+        }
-+
-+        body {
-+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-+            margin: 0;
-+            min-height: 100vh;
-+            background: linear-gradient(180deg, #e8eef9 0%, #f9fbff 100%);
-+            color: var(--text);
-+        }
-+
-+        .app {
-+            max-width: 960px;
-+            margin: 0 auto;
-+            padding: clamp(1.5rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 2.5rem) 4rem;
-+        }
-+
-+        header {
-+            text-align: center;
-+            margin-bottom: clamp(1.5rem, 4vw, 2.75rem);
-+        }
-+
-+        h1 {
-+            margin: 0;
-+            font-size: clamp(1.95rem, 4.8vw, 2.75rem);
-+            letter-spacing: 0.04em;
-+            text-transform: uppercase;
-+            color: var(--accent-dark);
-+            text-shadow: 0 10px 25px rgba(29, 78, 216, 0.18);
-+        }
-+
-+        header p {
-+            margin: 0.75rem auto 0;
-+            max-width: 60ch;
-+            font-size: clamp(1rem, 2.8vw, 1.1rem);
-+            line-height: 1.55;
-+            color: var(--text-subtle);
-+        }
-+
-+        .card {
-+            background: var(--surface);
-+            border-radius: 18px;
-+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
-+            padding: clamp(1.25rem, 4vw, 2rem);
-+            border: 1px solid rgba(148, 163, 184, 0.18);
-+        }
-+
-+        .controls {
-+            display: grid;
-+            gap: 0.9rem;
-+        }
-+
-+        .file-input,
-+        .scanner-input,
-+        .toggle-btn,
-+        .clear-btn,
-+        .report-btn {
-+            width: 100%;
-+            font-size: 1.05rem;
-+            padding: 0.85rem 1rem;
-+            border-radius: 12px;
-+            border: 1px solid var(--border);
-+            background: var(--surface-muted);
-+            color: inherit;
-+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-+        }
-+
-+        .file-input,
-+        .scanner-input {
-+            background: var(--surface);
-+            box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08);
-+        }
-+
-+        .toggle-btn,
-+        .clear-btn,
-+        .report-btn {
-+            cursor: pointer;
-+            font-weight: 600;
-+            text-align: center;
-+            user-select: none;
-+        }
-+
-+        .toggle-btn {
-+            background: var(--accent);
-+            color: #fff;
-+            border-color: transparent;
-+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
-+        }
-+
-+        .toggle-btn:hover,
-+        .toggle-btn:focus-visible {
-+            background: var(--accent-dark);
-+        }
-+
-+        .clear-btn {
-+            background: #fee2e2;
-+            color: #b91c1c;
-+            border-color: rgba(248, 113, 113, 0.4);
-+        }
-+
-+        .report-btn {
-+            background: var(--surface);
-+            border-color: rgba(37, 99, 235, 0.35);
-+            color: var(--accent-dark);
-+        }
-+
-+        .toggle-btn:active,
-+        .clear-btn:active,
-+        .report-btn:active {
-+            transform: translateY(1px) scale(0.995);
-+        }
-+
-+        .toggle-btn:focus-visible,
-+        .clear-btn:focus-visible,
-+        .report-btn:focus-visible,
-+        .scanner-input:focus-visible,
-+        .file-input:focus-visible {
-+            outline: 3px solid rgba(37, 99, 235, 0.35);
-+            outline-offset: 2px;
-+        }
-+
-+        .table-wrapper {
-+            margin-top: 2rem;
-+            border-radius: 16px;
-+            overflow: hidden;
-+            border: 1px solid rgba(148, 163, 184, 0.22);
-+            background: var(--surface);
-+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-+        }
-+
-+        .table-scroll {
-+            overflow-x: auto;
-+            -webkit-overflow-scrolling: touch;
-+        }
-+
-+        table {
-+            width: 100%;
-+            border-collapse: collapse;
-+            min-width: 680px;
-+        }
-+
-+        thead {
-+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.12));
-+        }
-+
-+        th,
-+        td {
-+            padding: 0.75rem 0.9rem;
-+            text-align: center;
-+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-+            font-size: 0.95rem;
-+        }
-+
-+        tbody tr:nth-child(odd) {
-+            background: rgba(148, 163, 184, 0.08);
-+        }
-+
-+        tbody tr:last-child td {
-+            border-bottom: none;
-+        }
-+
-+        .matched {
-+            background: var(--matched) !important;
-+        }
-+
-+        .completed {
-+            background: var(--success-soft) !important;
-+            color: #166534;
-+            font-weight: 600;
-+        }
-+
-+        @media (max-width: 720px) {
-+            .card {
-+                padding: 1.25rem;
-+            }
-+
-+            th,
-+            td {
-+                font-size: 0.85rem;
-+                padding: 0.6rem 0.75rem;
-+            }
-+
-+            .table-wrapper {
-+                margin-top: 1.5rem;
-+            }
-+        }
-+
-+        @media (max-width: 540px) {
-+            h1 {
-+                font-size: 1.85rem;
-+                letter-spacing: 0.025em;
-+            }
-+
-+            header p {
-+                font-size: 0.95rem;
-+            }
-+
-+            .controls {
-+                gap: 0.75rem;
-+            }
-+
-+            .file-input,
-+            .scanner-input,
-+            .toggle-btn,
-+            .clear-btn,
-+            .report-btn {
-+                font-size: 1rem;
-+                padding: 0.75rem 0.9rem;
-+            }
-+        }
-+    </style>
-+</head>
-+<body>
-+    <div class="app">
-+        <header>
-+            <h1>Barcode Checklist Manager</h1>
-+            <p>Upload your manifest, scan consignments, and keep deliveries on track with quick mark-off and check-off workflows.
-+            </p>
-+        </header>
-+
-+        <section class="card" aria-label="Checklist controls">
-+            <div class="controls">
-+                <input type="file" id="excelFile" class="file-input" accept=".xlsx, .xls">
-+                <input type="text" id="scannerInput" class="scanner-input" placeholder="Scan barcode here" disabled autofocus>
-+                <div id="toggleMode" class="toggle-btn" role="button" tabindex="0">Mode: Mark Off</div>
-+                <div id="clearChecklist" class="clear-btn" role="button" tabindex="0">Clear Checklist</div>
-+                <div id="downloadReport" class="report-btn" role="button" tabindex="0">Download Report</div>
-+            </div>
-+        </section>
-+
-+        <div id="tableContainer" class="table-wrapper">
-+            <div class="table-scroll"></div>
-+        </div>
-+    </div>
-+
-+    <!-- Load the Excel processing library -->
-+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-+    <script>
-+        const excelFileInput = document.getElementById('excelFile');
-+        const scannerInput = document.getElementById('scannerInput');
-+        const tableContainer = document.getElementById('tableContainer');
-+        const toggleModeBtn = document.getElementById('toggleMode');
-+        const clearChecklistBtn = document.getElementById('clearChecklist');
-+        const downloadReportBtn = document.getElementById('downloadReport');
-+        let mode = 'Mark Off'; // Default mode
-+        let tableData = [];
-+        let generatedBarcodes = {}; // Store barcodes for each sales order
-+        let scannedBoxes = {}; // Store scanned box counts for each sales order
-+
-+        const updateMode = () => {
-+            toggleModeBtn.textContent = `Mode: ${mode}`;
-+        };
-+
-+        const bindButton = (element, handler) => {
-+            element.addEventListener('click', handler);
-+            element.addEventListener('keydown', event => {
-+                if (event.key === 'Enter' || event.key === ' ') {
-+                    event.preventDefault();
-+                    handler();
-+                }
-+            });
-+        };
-+
-+        const toggleMode = () => {
-+            mode = mode === 'Mark Off' ? 'Check Off' : 'Mark Off';
-+            updateMode();
-+        };
-+
-+        bindButton(toggleModeBtn, toggleMode);
-+
-+        excelFileInput.addEventListener('change', function(event) {
-+            const file = event.target.files[0];
-+            if (!file) {
-+                return;
-+            }
-+
-+            const reader = new FileReader();
-+            reader.onload = function(e) {
-+                const data = new Uint8Array(e.target.result);
-+                const workbook = XLSX.read(data, { type: 'array' });
-+                const firstSheetName = workbook.SheetNames[0];
-+                const worksheet = workbook.Sheets[firstSheetName];
-+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-+                tableData = json; // Store data for matching later
-+                displayTable(json);
-+                generateBarcodes(json);
-+                scannerInput.disabled = false; // Enable barcode input after table is displayed
-+                scannerInput.focus();
-+            };
-+            reader.readAsArrayBuffer(file);
-+        });
-+
-+        function displayTable(data) {
-+            let table = '<div class="table-scroll"><table><thead><tr>';
-+            const headers = ["Run", "Drop", "Zone", "Date", "Sales Order", "Name", "Address", "Suburb", "Postcode", "Phone Number", "FP", "CH", "FL", "Weight", "Type"];
-+
-+            headers.forEach(header => {
-+                table += `<th>${header}</th>`;
-+            });
-+            table += '</tr></thead><tbody>';
-+
-+            data.slice(1).forEach((row, index) => {
-+                table += `<tr id="row-${index}">`;
-+                row.forEach(cell => {
-+                    table += `<td>${cell || '-'}</td>`; // Display dash if cell is empty
-+                });
-+                table += '</tr>';
-+            });
-+            table += '</tbody></table></div>';
-+            tableContainer.innerHTML = table;
-+        }
-+
-+        function generateBarcodes(data) {
-+            const salesOrderColumnIndex = 4; // Column E is the Sales Order (index 4)
-+            const fpColumnIndex = 10; // Column K (index 10)
-+            const chColumnIndex = 11; // Column L (index 11)
-+            const flColumnIndex = 12; // Column M (index 12)
-+
-+            generatedBarcodes = {};
-+            scannedBoxes = {};
-+
-+            data.slice(1).forEach(row => {
-+                const salesOrder = row[salesOrderColumnIndex];
-+                const fp = parseInt(row[fpColumnIndex]) || 0;
-+                const ch = parseInt(row[chColumnIndex]) || 0;
-+                const fl = parseInt(row[flColumnIndex]) || 0;
-+
-+                const totalBoxes = fp + ch + fl;
-+                scannedBoxes[salesOrder] = 0; // Initialize scanned boxes for this sales order
-+
-+                for (let i = 1; i <= totalBoxes; i++) {
-+                    const boxNumber = String(i).padStart(3, '0'); // Ensure 3-digit format
-+                    const barcode = `${salesOrder}${boxNumber}`;
-+                    if (!generatedBarcodes[salesOrder]) {
-+                        generatedBarcodes[salesOrder] = [];
-+                    }
-+                    generatedBarcodes[salesOrder].push(barcode);
-+                }
-+            });
-+        }
-+
-+        function handleScan(barcode) {
-+            if (!barcode) {
-+                return;
-+            }
-+
-+            let matched = false;
-+
-+            Object.keys(generatedBarcodes).forEach(salesOrder => {
-+                if (generatedBarcodes[salesOrder].includes(barcode)) {
-+                    const rowIndex = tableData.findIndex(row => row[4] === salesOrder); // Column 4 is Sales Order
-+                    if (rowIndex !== -1) {
-+                        scannedBoxes[salesOrder] += 1; // Increment the scanned box count
-+
-+                        const rowElement = document.getElementById(`row-${rowIndex - 1}`);
-+                        if (!rowElement) {
-+                            return;
-+                        }
-+
-+                        if (mode === 'Mark Off') {
-+                            rowElement.classList.add('matched');
-+                        } else if (mode === 'Check Off' && scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
-+                            rowElement.classList.add('completed');
-+                        }
-+                    }
-+                    matched = true;
-+                }
-+            });
-+
-+            if (!matched) {
-+                alert('Sales Order not found or barcode invalid');
-+            }
-+        }
-+
-+        scannerInput.addEventListener('keydown', function(event) {
-+            if (event.key === 'Enter') {
-+                handleScan(scannerInput.value.trim());
-+                scannerInput.value = '';
-+            }
-+        });
-+
-+        const clearChecklist = () => {
-+            const confirmed = confirm("Are you sure you want to clear the checklist?");
-+            if (confirmed) {
-+                tableContainer.innerHTML = '<div class="table-scroll"></div>';
-+                generatedBarcodes = {};
-+                scannedBoxes = {};
-+                tableData = [];
-+                scannerInput.value = '';
-+                scannerInput.disabled = true;
-+                excelFileInput.value = '';
-+                localStorage.clear(); // Clear saved state if using localStorage
-+            }
-+        };
-+        bindButton(clearChecklistBtn, clearChecklist);
-+
-+        const downloadReport = () => {
-+            if (!tableData.length) {
-+                alert('Please upload a manifest before downloading a report.');
-+                return;
-+            }
-+
-+            const completedOrders = [];
-+
-+            tableData.slice(1).forEach(row => {
-+                const salesOrder = row[4]; // Sales Order column
-+                if (generatedBarcodes[salesOrder] && scannedBoxes[salesOrder] === generatedBarcodes[salesOrder].length) {
-+                    completedOrders.push(row);
-+                }
-+            });
-+
-+            if (!completedOrders.length) {
-+                alert('There are no completed consignments to export yet.');
-+                return;
-+            }
-+
-+            const headers = ["Run", "Drop", "Zone", "Date", "Sales Order", "Name", "Address", "Suburb", "Postcode", "Phone Number", "FP", "CH", "FL", "Weight", "Type"];
-+            let csvContent = "data:text/csv;charset=utf-8,";
-+
-+            csvContent += headers.join(",") + "\n";
-+
-+            completedOrders.forEach(row => {
-+                csvContent += row.map(cell => (cell === undefined || cell === null || cell === '' ? '-' : cell)).join(",") + "\n";
-+            });
-+
-+            const encodedUri = encodeURI(csvContent);
-+            const link = document.createElement("a");
-+            link.setAttribute("href", encodedUri);
-+            link.setAttribute("download", "completed_consignments.csv");
-+            document.body.appendChild(link);
-+            link.click();
-+            document.body.removeChild(link);
-+        };
-+
-+        bindButton(downloadReportBtn, downloadReport);
-+    </script>
-+</body>
-+</html>
+(() => {
+  function init(){
+    // Column positions from the manifest sheets
+    const COL_SO = 4, COL_FP = 10, COL_CH = 11, COL_FL = 12;
+
+    let loadingXLSX = null;
+    async function ensureXLSX(){
+      if (typeof XLSX !== 'undefined') return true;
+      if (!loadingXLSX){
+        loadingXLSX = new Promise((resolve, reject)=>{
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          script.referrerPolicy = 'no-referrer';
+          script.dataset.fallback = 'xlsx';
+          script.onload = ()=> resolve(true);
+          script.onerror = (err)=> reject(err || new Error('Failed to load fallback XLSX parser'));
+          document.head.appendChild(script);
+        });
+      }
+      try{
+        await loadingXLSX;
+      }catch(err){
+        console.error('Unable to load XLSX fallback', err);
+        loadingXLSX = null;
+        return false;
+      }
+      return typeof XLSX !== 'undefined';
+    }
+
+    const logoutBtn = document.getElementById('auth_logout');
+
+    const MANIFEST_HEADERS = ['Run','Drop','Zone','Date','Sales Order','Name','Address','Suburb','Postcode','Phone Number','FP','CH','FL','Weight','Type'];
+    const normSO = v => (v == null ? '' : String(v).trim().toUpperCase());
+    const coerceCount = v => {
+      if (v == null || v === '') return 0;
+      const num = Number(v);
+      if (Number.isFinite(num)) return Math.max(0, num);
+      const parsed = parseInt(String(v), 10);
+      return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+    };
+
+    function manifestRowToCells(row){
+      const cells = Array.isArray(row) ? [...row] : [];
+      if (cells.length < MANIFEST_HEADERS.length){
+        while(cells.length < MANIFEST_HEADERS.length) cells.push('');
+      }else if(cells.length > MANIFEST_HEADERS.length){
+        cells.length = MANIFEST_HEADERS.length;
+      }
+      return cells.map(cell => (cell ?? '') === '' ? '-' : String(cell));
+    }
+
+    function computeManifestData(table){
+      const generated = {};
+      const rowLookup = {};
+      table.slice(1).forEach((row, idx)=>{
+        const so = normSO(row[COL_SO]);
+        if(!so) return;
+        (rowLookup[so] ||= []).push(idx);
+        const total = coerceCount(row[COL_FP]) + coerceCount(row[COL_CH]) + coerceCount(row[COL_FL]);
+        if(total<=0) return;
+        const arr = (generated[so] ||= []);
+        const start = arr.length;
+        for(let i=1;i<=total;i++) arr.push(`${so}${String(start+i).padStart(3,'0')}`);
+      });
+      return { generated, rowLookup };
+    }
+
+    function computeScheduleEntries(table){
+      const headers = (table[0] || []).map(v => String(v ?? '').trim().toLowerCase());
+      const createdIdx = headers.findIndex(h => h === 'created from');
+      const entries = [];
+      table.slice(1).forEach(row=>{
+        const so = normSO(row[COL_SO]);
+        if(!so) return;
+        const created = createdIdx !== -1 ? row[createdIdx] : row[COL_SO];
+        entries.push({ createdFrom: created ?? '', so });
+      });
+      return entries;
+    }
+
+    async function readWorkbookFile(file){
+      const buf = await file.arrayBuffer();
+      const wb  = XLSX.read(buf,{type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      return XLSX.utils.sheet_to_json(ws,{header:1});
+    }
+
+    function showToast(msg,type='info'){
+      const el=document.createElement('div');
+      el.textContent=msg;
+      el.role='status';
+      Object.assign(el.style,{
+        position:'fixed',left:'50%',top:'16px',transform:'translateX(-50%)',
+        padding:'10px 14px',borderRadius:'10px',zIndex:9999,fontSize:'14px',
+        border:'1px solid rgba(148,163,184,.3)',backdropFilter:'blur(8px)',
+        boxShadow:'0 10px 24px rgba(2,6,23,.4)',color:'#e2e8f0',background:'rgba(56,189,248,.12)'
+      });
+      if(type==='error'){el.style.background='rgba(248,113,113,.22)'; el.style.color='#fecaca';}
+      if(type==='success'){el.style.background='rgba(74,222,128,.22)'; el.style.color='#bbf7d0';}
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1600);
+    }
+
+    function storeFinalDataForUser(userId, tableData, filesMeta, manifestData){
+      const manifest = manifestData || computeManifestData(tableData);
+      const base = suffix => `drm_${userId}_final_${suffix}`;
+      localStorage.setItem(base('table_v2'), JSON.stringify(tableData));
+      localStorage.setItem(base('generated_v2'), JSON.stringify(manifest.generated));
+      localStorage.setItem(base('rowlookup_v2'), JSON.stringify(manifest.rowLookup));
+      localStorage.setItem(base('files_meta_v2'), JSON.stringify(filesMeta));
+      localStorage.setItem(base('scanned_v2'), JSON.stringify({}));
+    }
+
+    function storeGlueDataForUser(userId, scheduleEntries, filesMeta){
+      const base = suffix => `drm_${userId}_glue_${suffix}`;
+      localStorage.setItem(base('schedule_v1'), JSON.stringify(scheduleEntries));
+      localStorage.setItem(base('files_meta_v2'), JSON.stringify(filesMeta));
+      localStorage.setItem(base('scanned_v2'), JSON.stringify({}));
+    }
+
+    const REPORTS_KEY = 'drm_admin_reports_v1';
+    function loadReports(){
+      try{
+        return JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
+      }catch{
+        return [];
+      }
+    }
+    function saveReports(list){
+      localStorage.setItem(REPORTS_KEY, JSON.stringify(list));
+    }
+    function addReport(report){
+      const reports = loadReports();
+      reports.push(report);
+      saveReports(reports);
+      window.dispatchEvent(new CustomEvent('drm:reports-updated'));
+    }
+    function removeReport(reportId){
+      const reports = loadReports().filter(r => r.id !== reportId);
+      saveReports(reports);
+      window.dispatchEvent(new CustomEvent('drm:reports-updated'));
+    }
+    function encodeCSV(str){
+      try{
+        if (window.TextEncoder){
+          const bytes = new TextEncoder().encode(str);
+          let binary = '';
+          bytes.forEach(b => binary += String.fromCharCode(b));
+          return btoa(binary);
+        }
+      }catch{}
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    function decodeCSV(b64){
+      try{
+        const binary = atob(b64);
+        if (window.TextDecoder){
+          const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+          return new TextDecoder().decode(bytes);
+        }
+        return decodeURIComponent(escape(binary));
+      }catch{
+        try{
+          return decodeURIComponent(escape(atob(b64)));
+        }catch{
+          return atob(b64);
+        }
+      }
+    }
+
+    const USERS = [
+      { id:'albury',   name:'Albury Depot', role:'depot' },
+      { id:'melbourne',name:'Melbourne Depot', role:'depot' },
+      { id:'sydney',   name:'Sydney Depot', role:'depot' },
+      { id:'brisbane', name:'Brisbane Depot', role:'depot' },
+      { id:'perth',    name:'Perth Depot', role:'depot' },
+      { id:'glueline', name:'Glueline Team', role:'glue' },
+      { id:'admin',    name:'Administrator', role:'admin' }
+    ];
+    const PASSWORDS = {
+      default: 'Knowles40',
+      admin: '40knowles'
+    };
+    const AUTH_KEY = 'drm_auth_user_v1';
+    let currentUser = null;
+    let appStarted = false;
+
+    function setupAuth(onReady){
+      let resolved = false;
+      const overlay = document.getElementById('auth_overlay');
+      const form = document.getElementById('auth_form');
+      const userSelect = document.getElementById('auth_user');
+      const passInput = document.getElementById('auth_pass');
+      const errorEl = document.getElementById('auth_error');
+      const loginBtn = document.getElementById('auth_login');
+      if (!overlay || !form || !userSelect || !passInput || !errorEl || !loginBtn){
+        resolved = true;
+        onReady({ id:'anonymous', name:'Anonymous User' });
+        return;
+      }
+
+      if (!userSelect.dataset.populated){
+        USERS.forEach(user=>{
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = user.name;
+          userSelect.appendChild(option);
+        });
+        userSelect.dataset.populated = 'true';
+      }
+
+      function setError(msg){
+        errorEl.textContent = msg || '';
+        errorEl.style.display = msg ? 'block' : 'none';
+      }
+
+      function showOverlay(){
+        document.body.classList.add('auth-locked');
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden','false');
+        setError('');
+        passInput.value='';
+        loginBtn.disabled = false;
+        requestAnimationFrame(()=> userSelect.focus());
+        if (logoutBtn) logoutBtn.style.display = 'none';
+      }
+
+      function hideOverlay(){
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden','true');
+        document.body.classList.remove('auth-locked');
+        setError('');
+        passInput.value='';
+      }
+
+      function complete(user){
+        currentUser = user;
+        hideOverlay();
+        localStorage.setItem(AUTH_KEY, JSON.stringify({ id:user.id, name:user.name, role:user.role }));
+        if (!resolved){
+          resolved = true;
+          onReady(user);
+        }
+      }
+
+      form.addEventListener('submit', (event)=>{
+        event.preventDefault();
+        const selected = userSelect.value;
+        const password = passInput.value.trim();
+        if (!selected){ setError('Select your depot.'); userSelect.focus(); return; }
+        const record = USERS.find(u=>u.id===selected) || { id:selected, name:selected, role: selected === 'admin' ? 'admin' : 'depot' };
+        const role = record.role ?? (record.id === 'admin' ? 'admin' : 'depot');
+        const expected = (PASSWORDS[record.id] !== undefined)
+          ? PASSWORDS[record.id]
+          : (role === 'admin' ? PASSWORDS.admin : PASSWORDS.default);
+        if (password !== expected){ setError('Incorrect password.'); passInput.value=''; passInput.focus(); return; }
+        const user = { id: record.id, name: record.name ?? record.id, role };
+        complete(user);
+      });
+
+      passInput.addEventListener('input', ()=> setError(''));
+      userSelect.addEventListener('change', ()=> setError(''));
+
+      const stored = localStorage.getItem(AUTH_KEY);
+      if (stored){
+        try{
+          const parsed = JSON.parse(stored);
+          if (parsed?.id){
+            const base = USERS.find(u=>u.id===parsed.id);
+            const user = base ? { ...base } : { id: parsed.id, name: parsed.name ?? parsed.id, role: parsed.role ?? (parsed.id === 'admin' ? 'admin' : 'depot') };
+            complete(user);
+            return;
+          }
+        }catch{
+          localStorage.removeItem(AUTH_KEY);
+        }
+      }
+
+      showOverlay();
+    }
+
+    function MarkingModule(prefix){
+      const fileEl         = document.getElementById(prefix + '_file');
+      const fileMeta       = document.getElementById(prefix + '_file_meta');
+      const scheduleFileEl = document.getElementById(prefix + '_schedule_file');
+      const scheduleMeta   = document.getElementById(prefix + '_schedule_meta');
+      const scanEl         = document.getElementById(prefix + '_scan');
+      const clearEl        = document.getElementById(prefix + '_clear');
+      const exportEl       = document.getElementById(prefix + '_export');
+      const tableWrap      = document.getElementById(prefix + '_table');
+      const scheduleWrap   = document.getElementById(prefix + '_schedule_table');
+      const summaryEl      = document.getElementById(prefix + '_scanned_summary');
+      const filterClearEl  = document.getElementById(prefix + '_filter_clear');
+      const canUpload      = currentUser?.role === 'admin';
+
+      const hasRunsheetUI = Boolean(fileEl && fileMeta && tableWrap);
+      const hasScheduleUI = Boolean(scheduleFileEl && scheduleMeta && scheduleWrap);
+
+      if (!scanEl || !clearEl || !exportEl) {
+        return { focus: () => {} };
+      }
+      if (!hasRunsheetUI && !hasScheduleUI) {
+        return { focus: () => {} };
+      }
+
+      const baseKey = (suffix)=>{
+        const user = currentUser?.id || 'anon';
+        return `drm_${user}_${prefix}_${suffix}`;
+      };
+      const KEYS = {
+        table:   baseKey('table_v2'),
+        gen:     baseKey('generated_v2'),
+        scanned: baseKey('scanned_v2'),
+        lookup:  baseKey('rowlookup_v2'),
+        files:   baseKey('files_meta_v2'),
+        schedule:baseKey('schedule_v1'),
+      };
+
+      let tableData = [];
+      let generated = {};
+      let scanned   = {};
+      let rowLookup = {};
+      let statusEl  = null;
+      let loadedFiles = [];
+      let scheduleEntries = [];
+      let filteredSO = null;
+      let lastScanInfo = null;
+      let autoScanTimer = null;
+      const AUTOSCAN_DELAY = 120;
+      const MIN_BARCODE_LENGTH = 11;
+
+      const extractSO = v => {
+        const upper = String(v ?? '').toUpperCase();
+        const match = upper.match(/SO\d+/);
+        return match ? match[0] : '';
+      };
+
+      if (filterClearEl) filterClearEl.style.display = 'none';
+      if (summaryEl) summaryEl.style.display = 'none';
+
+      if (!canUpload){
+        if (fileEl){
+          fileEl.disabled = true;
+          fileEl.style.display = 'none';
+        }
+        if (scheduleFileEl){
+          scheduleFileEl.disabled = true;
+          scheduleFileEl.style.display = 'none';
+        }
+      }
+
+      function ensureStatus(){
+        if (statusEl) return statusEl;
+        statusEl = document.createElement('div');
+        Object.assign(statusEl.style,{
+          marginTop:'0.75rem',border:'1px solid rgba(148,163,184,.25)',borderRadius:'12px',
+          padding:'12px 14px',background:'rgba(56,189,248,.08)',boxShadow:'inset 0 1px 0 rgba(255,255,255,.04)',
+          fontSize:'1rem',letterSpacing:'0.01em'
+        });
+        const card = fileEl.closest('.card');
+        const controls = card?.querySelector('.controls');
+        if (card && controls) card.insertBefore(statusEl, controls.nextSibling);
+        return statusEl;
+      }
+
+      function setStatus({so, run, drop, scannedCount, total}){
+        const el = ensureStatus();
+        const runText = run && run !== '-' ? run : '-';
+        const dropText = drop && drop !== '-' ? drop : '-';
+        const hasRoute = runText !== '-' || dropText !== '-';
+        const routeText = hasRoute ? `Run ${runText} / Drop ${dropText}` : 'Not routed';
+        let html = `
+          <strong>Sales Order:</strong> <span>${so}</span>&nbsp;&middot;&nbsp;
+          <strong>Route:</strong> <span style="font-size:1.2rem;font-weight:700;letter-spacing:.02em">${routeText}</span>
+        `;
+        if (hasRunsheetUI) {
+          html += `&nbsp;&middot;&nbsp;<strong>Progress:</strong> <span>${scannedCount}/${total}</span>`;
+        }
+        el.innerHTML = html;
+      }
+
+      const toast = showToast;
+
+      function updateFileMeta(){
+        if (!fileMeta) return;
+        if (!loadedFiles.length) {
+          fileMeta.textContent = canUpload ? 'No runsheet loaded.' : 'Awaiting admin upload.';
+          return;
+        }
+        const totalRows = loadedFiles.reduce((sum,file)=>sum+file.rows,0);
+        fileMeta.textContent = `${loadedFiles.length} file(s) merged - ${totalRows.toLocaleString()} rows`;
+      }
+
+      function updateScheduleMeta(){
+        if (!scheduleMeta) return;
+        if (!scheduleEntries.length) {
+          scheduleMeta.textContent = canUpload ? 'No production schedule loaded.' : 'Awaiting admin upload.';
+          return;
+        }
+        const matched = scheduleEntries.reduce((sum, entry)=> sum + (rowLookup[entry.so]?.length ? 1 : 0), 0);
+        let text = `${scheduleEntries.length} production order(s) loaded - ${matched} matched to runsheet.`;
+        if (filteredSO){
+          const visible = scheduleEntries.filter(entry => entry.so === filteredSO).length;
+          text += ` Showing ${visible} for ${filteredSO}.`;
+        }
+        scheduleMeta.textContent = text;
+      }
+
+      function updateScanAvailability(){
+        if (!scanEl) return;
+        const hasGenerated = Object.values(generated).some(arr => Array.isArray(arr) && arr.length > 0);
+        const shouldEnable = hasGenerated;
+        const wasDisabled = scanEl.disabled;
+        scanEl.disabled = !shouldEnable;
+        if (shouldEnable && wasDisabled) focusScan();
+      }
+
+      function updateFilterUI(){
+        if (!filterClearEl) return;
+        filterClearEl.style.display = filteredSO ? '' : 'none';
+      }
+
+      function updateSummaryDisplay(){
+        if (!summaryEl) return;
+        if (!lastScanInfo || (hasScheduleUI && !scheduleEntries.length)){
+          summaryEl.style.display = 'none';
+          summaryEl.innerHTML = '';
+          return;
+        }
+        const { so, run, drop } = lastScanInfo;
+        const runText = run && run !== '-' ? run : '-';
+        const dropText = drop && drop !== '-' ? drop : '-';
+        const hasRoute = runText !== '-' || dropText !== '-';
+        const routeText = hasRoute ? `Run ${runText} / Drop ${dropText}` : 'Not routed';
+        summaryEl.style.display = '';
+        summaryEl.innerHTML = `
+          <strong>Scanned:</strong> <span>${so}</span>&nbsp;&middot;&nbsp;
+          <strong>Route:</strong> <span>${routeText}</span>
+        `;
+      }
+
+      function recalcManifest(){
+        const manifest = computeManifestData(tableData);
+        generated = manifest.generated;
+        rowLookup = manifest.rowLookup;
+      }
+
+      function applyScheduleFilter(so){
+        if (!hasScheduleUI) return;
+        filteredSO = so;
+        renderScheduleTable();
+        updateScheduleMeta();
+        updateScanAvailability();
+        updateSummaryDisplay();
+      }
+
+      function clearScheduleFilter(){
+        if (!hasScheduleUI) return;
+        filteredSO = null;
+        renderScheduleTable();
+        updateScheduleMeta();
+        updateScanAvailability();
+        focusScan();
+        updateSummaryDisplay();
+      }
+
+      function save(){
+        try{
+          const plainScanned = {};
+          Object.entries(scanned).forEach(([k,v])=>plainScanned[k]=Array.from(v));
+          localStorage.setItem(KEYS.scanned, JSON.stringify(plainScanned));
+          if (hasRunsheetUI){
+            localStorage.setItem(KEYS.table, JSON.stringify(tableData));
+            localStorage.setItem(KEYS.gen, JSON.stringify(generated));
+            localStorage.setItem(KEYS.lookup, JSON.stringify(rowLookup));
+            localStorage.setItem(KEYS.files, JSON.stringify(loadedFiles));
+            if (typeof window !== 'undefined'){
+              window.dispatchEvent(new CustomEvent('drm:runsheet-updated', { detail: { prefix } }));
+            }
+          }
+          if (hasScheduleUI){
+            localStorage.setItem(KEYS.schedule, JSON.stringify(scheduleEntries));
+          }
+        }catch{}
+      }
+
+      function load(){
+        try{
+          const storedScanned = localStorage.getItem(KEYS.scanned);
+          scanned = {};
+          if (storedScanned){
+            const plain = JSON.parse(storedScanned) || {};
+            Object.entries(plain).forEach(([k,arr])=>scanned[k]=new Set(arr||[]));
+          }
+
+          if (hasRunsheetUI){
+            const t = localStorage.getItem(KEYS.table);
+            const g = localStorage.getItem(KEYS.gen);
+            const l = localStorage.getItem(KEYS.lookup);
+            const f = localStorage.getItem(KEYS.files);
+            if (t){
+              tableData = JSON.parse(t) || [];
+              generated = g ? JSON.parse(g) || {} : {};
+              rowLookup = l ? JSON.parse(l) || {} : {};
+              loadedFiles = f ? JSON.parse(f) : [];
+              if ((!g || !l) && tableData.length){
+                const manifest = computeManifestData(tableData);
+                generated = manifest.generated;
+                rowLookup = manifest.rowLookup;
+              }
+              if (tableData.length && tableWrap){
+                renderTable();
+                Object.keys(rowLookup).forEach(updateRowHighlight);
+              } else if (tableWrap){
+                tableWrap.innerHTML = '<div class="table-scroll"></div>';
+                scanEl.disabled = true;
+              }
+            } else {
+              tableData = []; generated = {}; rowLookup = {}; loadedFiles = [];
+              if (tableWrap) tableWrap.innerHTML = '<div class="table-scroll"></div>';
+              scanEl.disabled = true;
+            }
+          } else {
+            tableData = []; generated = {}; rowLookup = {}; loadedFiles = [];
+            scanEl.disabled = true;
+          }
+
+          if (hasScheduleUI){
+            const sched=localStorage.getItem(KEYS.schedule);
+            scheduleEntries = sched ? JSON.parse(sched) : [];
+          }else{
+            scheduleEntries = [];
+          }
+
+          updateFileMeta();
+          refreshSchedule();
+          updateScanAvailability();
+        }catch{
+          tableData=[]; generated={}; rowLookup={}; loadedFiles=[];
+          if (hasRunsheetUI && tableWrap) tableWrap.innerHTML='<div class="table-scroll"></div>';
+          scanEl.disabled = true;
+          if (hasScheduleUI) scheduleEntries = [];
+          scanned = {};
+          updateFileMeta();
+          refreshSchedule();
+          updateScanAvailability();
+        }
+      }
+
+      function reset(clear=false){
+        tableData=[]; generated={}; scanned={}; rowLookup={}; loadedFiles=[];
+        if (hasScheduleUI) scheduleEntries=[];
+        filteredSO = null;
+        lastScanInfo = null;
+        if (autoScanTimer){ clearTimeout(autoScanTimer); autoScanTimer=null; }
+        if (hasRunsheetUI && tableWrap) tableWrap.innerHTML='<div class="table-scroll"></div>';
+        if (hasScheduleUI && scheduleWrap) scheduleWrap.innerHTML='<div class="table-scroll"></div>';
+        scanEl.disabled = true;
+        updateFilterUI();
+        updateSummaryDisplay();
+        if(clear){
+          if (hasRunsheetUI){
+            localStorage.removeItem(KEYS.table);
+            localStorage.removeItem(KEYS.gen);
+            localStorage.removeItem(KEYS.lookup);
+            localStorage.removeItem(KEYS.files);
+          }
+          if (hasScheduleUI){
+            localStorage.removeItem(KEYS.schedule);
+          }
+          localStorage.removeItem(KEYS.scanned);
+        }
+        updateFileMeta();
+        refreshSchedule();
+        updateScanAvailability();
+      }
+
+      function renderTable(){
+        if (!hasRunsheetUI || !tableWrap) return;
+        const headers = MANIFEST_HEADERS;
+        let html = '<div class="table-scroll"><table><thead><tr>';
+        headers.forEach(h=> html += `<th>${h}</th>`);
+        html += '</tr></thead><tbody>';
+        tableData.slice(1).forEach((row, idx)=>{
+          html += `<tr id="${prefix}-row-${idx}">`;
+          const cells = manifestRowToCells(row);
+          cells.forEach(cell=> html += `<td>${cell}</td>`);
+          html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        tableWrap.innerHTML = html;
+      }
+
+      function renderScheduleTable(){
+        if (!hasScheduleUI || !scheduleWrap) return;
+        const headers = MANIFEST_HEADERS;
+        const entries = filteredSO ? scheduleEntries.filter(entry => entry.so === filteredSO) : scheduleEntries;
+        if (!entries.length){
+          const message = filteredSO
+            ? `No production orders found for ${filteredSO}.`
+            : '';
+          const body = message ? `<div style="padding:1rem;text-align:center;">${message}</div>` : '';
+          scheduleWrap.innerHTML = `<div class="table-scroll">${body}</div>`;
+          updateFilterUI();
+          return;
+        }
+        let html = '<div class="table-scroll"><table><thead><tr>';
+        headers.forEach(h=> html += `<th>${h}</th>`);
+        html += '</tr></thead><tbody>';
+        entries.forEach(entry=>{
+          const idxs = rowLookup[entry.so] || [];
+          const route = firstRunDrop(entry.so);
+          const runText = route.run && route.run !== '-' ? route.run : '-';
+          const dropText = route.drop && route.drop !== '-' ? route.drop : '-';
+          if (idxs.length){
+            idxs.forEach(idx=>{
+              const row = tableData[idx+1] || [];
+              const cells = manifestRowToCells(row);
+              html += '<tr>' + cells.map(cell=>`<td>${cell}</td>`).join('') + '</tr>';
+            });
+          }else{
+            const cells = new Array(headers.length).fill('-');
+            cells[0] = runText;
+            cells[1] = dropText;
+            cells[4] = entry.so || '-';
+            cells[5] = entry.createdFrom || '-';
+            html += '<tr>' + cells.map(cell=>`<td>${cell}</td>`).join('') + '</tr>';
+          }
+        });
+        html += '</tbody></table></div>';
+        scheduleWrap.innerHTML = html;
+        updateFilterUI();
+      }
+
+      function syncExternalRunsheet(){
+        if (hasRunsheetUI) return;
+        try{
+          const finalKey = suffix => `drm_${currentUser?.id || 'anon'}_final_${suffix}`;
+          const tableRaw = localStorage.getItem(finalKey('table_v2'));
+          const lookupRaw = localStorage.getItem(finalKey('rowlookup_v2'));
+          const genRaw    = localStorage.getItem(finalKey('generated_v2'));
+          tableData = tableRaw ? JSON.parse(tableRaw) || [] : [];
+          rowLookup = lookupRaw ? JSON.parse(lookupRaw) || {} : {};
+          generated = genRaw ? JSON.parse(genRaw) || {} : {};
+          if (tableData.length && (!genRaw || !lookupRaw)){
+            const manifest = computeManifestData(tableData);
+            if (!genRaw) generated = manifest.generated;
+            if (!lookupRaw) rowLookup = manifest.rowLookup;
+          }
+        }catch{
+          tableData=[]; rowLookup={}; generated={};
+        }
+      }
+
+      function refreshSchedule(){
+        if (!hasScheduleUI) return;
+        syncExternalRunsheet();
+        renderScheduleTable();
+        updateScheduleMeta();
+        updateScanAvailability();
+        updateSummaryDisplay();
+      }
+
+      function updateRowHighlight(so){
+        if (!hasRunsheetUI) return;
+        const idxs=rowLookup[so];
+        if(!idxs) return;
+        const tot = generated[so]?.length ?? 0;
+        const scn = scanned[so]?.size ?? 0;
+        idxs.forEach(i=>{
+          const tr = document.getElementById(`${prefix}-row-${i}`);
+          if(!tr) return;
+          tr.classList.remove('partial','completed');
+          if(tot>0 && scn>=tot) tr.classList.add('completed');
+          else if(scn>0) tr.classList.add('partial');
+        });
+      }
+
+      function firstRunDrop(so){
+        const idxs=rowLookup[so];
+        if(!idxs?.length) return {run:'-',drop:'-'};
+        const row = tableData[idxs[0]+1] || [];
+        return { run: String(row[0] ?? '-'), drop: String(row[1] ?? '-') };
+      }
+
+      function focusScan(){
+        if(!scanEl.disabled) requestAnimationFrame(()=>scanEl.focus());
+      }
+
+      function shakeInput(){
+        scanEl.style.transition='transform 0.08s ease';
+        scanEl.style.transform='translateX(0)';
+        let i=0;
+        const t=setInterval(()=>{
+          scanEl.style.transform=`translateX(${i%2===0?'-6px':'6px'})`;
+          if(++i>6){clearInterval(t); scanEl.style.transform='translateX(0)';}
+        },50);
+      }
+
+      async function handleFiles(fileList){
+        if (!canUpload || !hasRunsheetUI) return;
+        if(!fileList || !fileList.length) return;
+        if (!(await ensureXLSX())){
+          toast('Excel parser not available. Check your connection and try again.', 'error');
+          if (fileEl) fileEl.value='';
+          return;
+        }
+        try{
+          const files = Array.from(fileList);
+          const results = await Promise.all(files.map(f => readWorkbookFile(f).then(rows => ({ name:f.name, rows }))));
+          if (!results.length || !results[0].rows?.length){
+            toast('The selected workbook appears to be empty.', 'error');
+            return;
+          }
+
+          let base = tableData.length ? tableData[0] : results[0].rows[0] || [];
+          let merged = [ base ];
+          let addedCount = 0;
+          let newFilesMeta = [];
+
+          if (tableData.length > 1) {
+            merged = merged.concat(tableData.slice(1));
+            addedCount += (tableData.length - 1);
+          }
+
+          results.forEach(r => {
+            const body = (r.rows || []).slice(1);
+            if (body.length) {
+              merged = merged.concat(body);
+              addedCount += body.length;
+              newFilesMeta.push({ name: r.name, rows: body.length });
+            }
+          });
+
+          tableData = merged;
+          loadedFiles = (loadedFiles || []).concat(newFilesMeta);
+          filteredSO = null;
+          lastScanInfo = null;
+          updateSummaryDisplay();
+          updateFilterUI();
+
+          recalcManifest();
+          renderTable();
+          scanEl.value = '';
+          Object.keys(rowLookup).forEach(updateRowHighlight);
+          refreshSchedule();
+          updateFileMeta();
+          updateScanAvailability();
+          save();
+          focusScan();
+          toast(`Merged ${newFilesMeta.length} file(s), ${addedCount.toLocaleString()} rows.`, 'success');
+        }catch(err){
+          console.error(err);
+          toast('Unable to read the selected workbook. Please verify the file format.', 'error');
+        }finally{
+          fileEl.value = '';
+        }
+      }
+
+      async function handleSchedule(fileList){
+        if (!canUpload || !hasScheduleUI) return;
+        if(!fileList || !fileList.length) return;
+        if (!(await ensureXLSX())){
+          toast('Excel parser not available. Check your connection and try again.', 'error');
+          if (scheduleFileEl) scheduleFileEl.value='';
+          return;
+        }
+        try{
+          const file = fileList[0];
+          const rows = await readWorkbookFile(file);
+          if(!rows.length){
+            toast('The production schedule appears to be empty.', 'error');
+            scheduleEntries = [];
+            refreshSchedule();
+            save();
+            return;
+          }
+          const headers = (rows[0] || []).map(v => String(v ?? '').trim().toLowerCase());
+          const createdIdx = headers.findIndex(h => h === 'created from');
+          if (createdIdx === -1){
+            toast('Could not find a "Created From" column in the production schedule.', 'error');
+            return;
+          }
+          const seen = new Set();
+          const entries = [];
+          rows.slice(1).forEach(row=>{
+            const raw = row[createdIdx];
+            if (raw == null || raw === '') return;
+            const so = extractSO(raw);
+            if (!so || seen.has(so)) return;
+            seen.add(so);
+            entries.push({ createdFrom: String(raw), so });
+          });
+          if (!entries.length){
+            toast('No sales orders found in the production schedule.', 'error');
+            filteredSO = null;
+            scheduleEntries = [];
+            refreshSchedule();
+            save();
+            return;
+          }
+          filteredSO = null;
+          scheduleEntries = entries;
+          lastScanInfo = null;
+          updateSummaryDisplay();
+          updateFilterUI();
+          refreshSchedule();
+          updateScanAvailability();
+          save();
+          toast(`Loaded ${entries.length} production order(s).`,'success');
+        }catch(err){
+          console.error(err);
+          toast('Unable to read the production schedule.', 'error');
+        }finally{
+          scheduleFileEl.value = '';
+        }
+      }
+
+      function handleScan(raw){
+        const s = raw ? String(raw).trim() : '';
+        if(!s) return false;
+        if (s.length < MIN_BARCODE_LENGTH){ toast(`Barcode must be ${MIN_BARCODE_LENGTH} characters.`, 'error'); shakeInput(); return false; }
+        const code = s.toUpperCase();
+        const so = code.slice(0,-3);
+        const known = generated[so];
+        if(!known || !known.includes(code)){ toast('Sales Order not found or barcode invalid.','error'); shakeInput(); return false; }
+        if(!scanned[so]) scanned[so]=new Set();
+        const preventDuplicates = hasRunsheetUI;
+        if (preventDuplicates && scanned[so].has(code)){
+          toast('This barcode has already been scanned.','info');
+          focusScan();
+          return false;
+        }
+        scanned[so].add(code);
+        const scannedCount = scanned[so].size;
+        const total = known.length;
+        const {run, drop} = firstRunDrop(so);
+        setStatus({so, run, drop, scannedCount, total});
+        if (hasScheduleUI && !hasRunsheetUI) applyScheduleFilter(so);
+        updateRowHighlight(so);
+        lastScanInfo = { so, run, drop };
+        updateSummaryDisplay();
+        if (autoScanTimer){ clearTimeout(autoScanTimer); autoScanTimer=null; }
+        save();
+        focusScan();
+        const statusText = hasRunsheetUI
+          ? `Marked 1 / ${total} for ${so}`
+          : `Run ${run || '-'} / Drop ${drop || '-'} for ${so}`;
+        toast(statusText,'success');
+        return true;
+      }
+
+      scanEl.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter'){
+          const ok = handleScan(e.target.value);
+          if(ok) e.target.value='';
+        }
+      });
+
+      scanEl.addEventListener('input', ()=>{
+        if (scanEl.disabled) return;
+        const value = scanEl.value ? scanEl.value.trim() : '';
+        if (!value){
+          if (autoScanTimer){ clearTimeout(autoScanTimer); autoScanTimer=null; }
+          return;
+        }
+        if (value.length < MIN_BARCODE_LENGTH) return;
+        if (autoScanTimer) clearTimeout(autoScanTimer);
+        autoScanTimer = setTimeout(()=>{
+          autoScanTimer = null;
+          const ok = handleScan(value);
+          if (ok) scanEl.value='';
+        }, AUTOSCAN_DELAY);
+      });
+
+      if (canUpload && fileEl) fileEl.addEventListener('change', (e)=>{ handleFiles(e.target.files); });
+      if (canUpload && scheduleFileEl) scheduleFileEl.addEventListener('change', (e)=>{ handleSchedule(e.target.files); });
+      if (filterClearEl){
+        filterClearEl.addEventListener('click', ()=>{ clearScheduleFilter(); });
+        filterClearEl.addEventListener('keydown', (event)=>{
+          if (event.key === 'Enter' || event.key === ' '){
+            event.preventDefault();
+            clearScheduleFilter();
+          }
+        });
+      }
+
+      clearEl.addEventListener('click', ()=>{
+        if(!confirm('Clear this marking tab?')) return;
+        reset(true);
+        scanEl.value='';
+        if (hasRunsheetUI && fileEl) fileEl.value='';
+        if (hasScheduleUI && scheduleFileEl) scheduleFileEl.value='';
+        toast('Cleared.','success');
+      });
+
+      if (hasScheduleUI && !hasRunsheetUI && typeof window !== 'undefined'){
+        window.addEventListener('drm:runsheet-updated', refreshSchedule);
+      }
+
+      exportEl.addEventListener('click', ()=>{
+        if(!tableData.length){
+          toast('Nothing to report yet.', 'error');
+          return;
+        }
+        const esc = v => {
+          const s = (v??'')==='' ? '-' : String(v);
+          return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+        };
+
+        let headers = MANIFEST_HEADERS;
+        let dataRows = [];
+        if (prefix === 'final'){
+          if (tableData.length <= 1){
+            toast('No manifest entries yet.', 'info');
+            return;
+          }
+          headers = [...MANIFEST_HEADERS, 'Status'];
+          const statusBySo = {};
+          Object.keys(generated).forEach(so=>{
+            const expected = generated[so]?.length ?? 0;
+            const counted = scanned[so]?.size ?? 0;
+            statusBySo[so] = expected > 0 && counted >= expected ? 'Complete' : 'Not Complete';
+          });
+          dataRows = tableData.slice(1).map(row=>{
+            const cells = manifestRowToCells(row);
+            const so = normSO(row[COL_SO]);
+            cells.push(statusBySo[so] || 'Not Complete');
+            return cells;
+          });
+        }else{
+          if (tableData.length <= 1){
+            toast('No entries in the schedule yet.', 'info');
+            return;
+          }
+          dataRows = tableData.slice(1).map(row => manifestRowToCells(row));
+        }
+
+        let csv = headers.join(',') + '\n';
+        dataRows.forEach(cells => { csv += cells.slice(0, headers.length).map(esc).join(',') + '\n'; });
+
+        const report = {
+          id: `rep_${Date.now()}_${Math.random().toString(16).slice(2,10)}`,
+          depotId: currentUser?.id || 'unknown',
+          depotName: currentUser?.name || 'Unknown Depot',
+          kind: prefix,
+          created: new Date().toISOString(),
+          rows: dataRows.length,
+          filename: `${prefix}_${currentUser?.id || 'unknown'}_${Date.now()}.csv`,
+          csv: encodeCSV(csv)
+        };
+        addReport(report);
+        toast('Report sent to admin.', 'success');
+      });
+
+      load();
+
+      return { focus: () => { if(!scanEl.disabled) scanEl.focus(); } };
+    }
+
+    function AdminModule(){
+      const uploadEl = document.getElementById('admin_upload');
+      const metaEl   = document.getElementById('admin_meta');
+      const pushFinalEl = document.getElementById('admin_push_final');
+      const pushGlueEl  = document.getElementById('admin_push_glue');
+      const previewWrap = document.getElementById('admin_preview');
+      const targetsWrap = document.getElementById('admin_targets');
+      const reportsMeta = document.getElementById('admin_reports_meta');
+      const reportsTable= document.getElementById('admin_reports_table');
+      if (!uploadEl || !metaEl || !pushFinalEl || !pushGlueEl || !previewWrap || !targetsWrap || !reportsMeta || !reportsTable){
+        return { focus: () => {} };
+      }
+
+      let tableData = [];
+      let fileName = '';
+
+      function renderPreview(){
+        if (!tableData.length){
+          previewWrap.innerHTML = '<div class="table-scroll"></div>';
+          return;
+        }
+        let html = '<div class="table-scroll"><table><thead><tr>';
+        MANIFEST_HEADERS.forEach(h => html += `<th>${h}</th>`);
+        html += '</tr></thead><tbody>';
+        tableData.slice(1).forEach(row => {
+          const cells = manifestRowToCells(row);
+          html += '<tr>' + cells.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+        });
+        html += '</tbody></table></div>';
+        previewWrap.innerHTML = html;
+      }
+
+      function renderTargets(){
+        targetsWrap.innerHTML = '';
+        USERS.filter(u => u.role === 'depot' || u.role === 'glue').forEach(user=>{
+          const label = document.createElement('label');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = user.id;
+          checkbox.checked = true;
+          const span = document.createElement('span');
+          span.textContent = user.name;
+          label.appendChild(checkbox);
+          label.appendChild(span);
+          targetsWrap.appendChild(label);
+        });
+      }
+
+      function selectedDepotIds(){
+        return Array.from(targetsWrap.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      }
+
+      function renderReports(){
+        const reports = loadReports();
+        if (!reports.length){
+          reportsMeta.textContent = 'No reports submitted.';
+          reportsTable.innerHTML = '<div class="table-scroll"></div>';
+          return;
+        }
+        reportsMeta.textContent = `${reports.length} report(s) awaiting review.`;
+        let html = '<div class="table-scroll"><table><thead><tr>';
+        html += '<th>Depot</th><th>Type</th><th>Rows</th><th>Submitted</th><th>Actions</th>';
+        html += '</tr></thead><tbody>';
+        reports.forEach(report => {
+          const submitted = new Date(report.created).toLocaleString();
+          const kindLabel = report.kind === 'final' ? 'Final' : 'Glueline';
+          html += `<tr data-report-id="${report.id}">` +
+                  `<td>${report.depotName || report.depotId}</td>` +
+                  `<td>${kindLabel}</td>` +
+                  `<td>${report.rows ?? '-'}</td>` +
+                  `<td>${submitted}</td>` +
+                  '<td>' +
+                  `<button type="button" class="report-download" data-report="${report.id}">Download</button>` +
+                  `<button type="button" class="report-remove" data-report="${report.id}">Remove</button>` +
+                  '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        reportsTable.innerHTML = html;
+      }
+
+      function downloadReportById(id){
+        const report = loadReports().find(r => r.id === id);
+        if (!report) return;
+        const csv = decodeCSV(report.csv);
+        const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = report.filename || `${report.kind}_report.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(()=>URL.revokeObjectURL(a.href),0);
+      }
+
+      function handleReportAction(event){
+        const btn = event.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.report;
+        if (!id) return;
+        if (btn.classList.contains('report-download')){
+          downloadReportById(id);
+        } else if (btn.classList.contains('report-remove')){
+          removeReport(id);
+          showToast('Report removed.', 'info');
+        }
+      }
+
+      function updateMeta(){
+        if (!tableData.length){
+          metaEl.textContent = 'No shared manifest uploaded.';
+        } else {
+          metaEl.textContent = `${fileName || 'Shared Upload'} - ${Math.max(0, tableData.length - 1)} rows`;
+        }
+      }
+
+      uploadEl.addEventListener('change', async event => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!(await ensureXLSX())){
+          showToast('Excel parser not available. Check your connection and try again.', 'error');
+          uploadEl.value = '';
+          return;
+        }
+        try {
+          const rows = await readWorkbookFile(file);
+          if (!rows.length){
+            showToast('Uploaded workbook is empty.', 'error');
+            tableData = [];
+            renderPreview();
+            updateMeta();
+            return;
+          }
+          tableData = rows;
+          fileName = file.name;
+          renderPreview();
+          updateMeta();
+          showToast(`Loaded admin workbook (${rows.length - 1} rows).`, 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('Unable to read admin workbook.', 'error');
+        } finally {
+          uploadEl.value = '';
+        }
+      });
+
+      function ensureData(){
+        if (!tableData.length){
+          showToast('Upload a manifest before pushing.', 'error');
+          return false;
+        }
+        return true;
+      }
+
+      function currentFilesMeta(){
+        return [{
+          name: fileName || 'Shared Upload',
+          rows: Math.max(0, tableData.length - 1),
+          pushedBy: currentUser?.name || 'Admin',
+          pushedAt: new Date().toISOString()
+        }];
+      }
+
+      function pushFinal(){
+        if (!ensureData()) return;
+        const targets = selectedDepotIds();
+        if (!targets.length){
+          showToast('Select at least one depot.', 'error');
+          return;
+        }
+        const meta = currentFilesMeta();
+        const manifest = computeManifestData(tableData);
+        targets.forEach(userId => {
+          storeFinalDataForUser(userId, tableData, meta, manifest);
+        });
+        window.dispatchEvent(new CustomEvent('drm:runsheet-updated', { detail: { prefix: 'admin' } }));
+        showToast(`Pushed manifest to ${targets.length} depot(s).`, 'success');
+      }
+
+      function pushGlue(){
+        if (!ensureData()) return;
+        const entries = computeScheduleEntries(tableData);
+        if (!entries.length){
+          showToast('No sales orders found to push.', 'error');
+          return;
+        }
+        const targets = selectedDepotIds();
+        if (!targets.length){
+          showToast('Select at least one depot.', 'error');
+          return;
+        }
+        const meta = currentFilesMeta();
+        targets.forEach(userId => {
+          storeGlueDataForUser(userId, entries, meta);
+        });
+        showToast(`Pushed schedule to ${targets.length} depot(s).`, 'success');
+      }
+
+      pushFinalEl.addEventListener('click', pushFinal);
+      pushGlueEl.addEventListener('click', pushGlue);
+      reportsTable.addEventListener('click', handleReportAction);
+      window.addEventListener('drm:reports-updated', renderReports);
+
+      renderTargets();
+      renderReports();
+
+      return {
+        focus: () => uploadEl.focus()
+      };
+    }
+
+    function startApp(user){
+      if (appStarted) return;
+      appStarted = true;
+      currentUser = user;
+
+      if (logoutBtn){
+        logoutBtn.style.display = 'inline-flex';
+        logoutBtn.textContent = `Logout (${user.name})`;
+        if (!logoutBtn.dataset.bound){
+          logoutBtn.addEventListener('click', ()=>{
+            localStorage.removeItem(AUTH_KEY);
+            location.reload();
+          });
+          logoutBtn.dataset.bound = 'true';
+        }
+      }
+
+      const finalModule = MarkingModule('final');
+      let glueModule  = null;
+      let adminModule   = null;
+
+      const glueTabBtn = document.getElementById('tab-glue');
+      if (user.role === 'admin' || user.role === 'glue'){
+        if (glueTabBtn) glueTabBtn.style.display = '';
+        glueModule = MarkingModule('glue');
+      } else if (glueTabBtn){
+        glueTabBtn.style.display = 'none';
+      }
+
+      const adminTabBtn = document.getElementById('tab-admin');
+      if (user.role === 'admin' && adminTabBtn){
+        adminTabBtn.style.display = '';
+        adminModule = AdminModule();
+      } else if (adminTabBtn){
+        adminTabBtn.style.display = 'none';
+      }
+
+      let activeTab = glueModule ? (user.role === 'glue' ? 'glue' : 'final') : 'final';
+      if (adminModule) activeTab = 'admin';
+
+      function activate(which){
+        activeTab = which;
+        const map = {
+          final: { tab:'#tab-final', panel:'#panel-final', focus: finalModule.focus }
+        };
+        if (glueModule){
+          map.glue = { tab:'#tab-glue', panel:'#panel-glue', focus: glueModule.focus };
+        }
+        if (adminModule){
+          map.admin = { tab:'#tab-admin', panel:'#panel-admin', focus: adminModule.focus };
+        }
+        const finalTabEl = document.getElementById('tab-final');
+        const glueTabEl  = document.getElementById('tab-glue');
+        const adminTabEl = document.getElementById('tab-admin');
+        const finalPanel = document.getElementById('panel-final');
+        const gluePanel  = document.getElementById('panel-glue');
+        const adminPanel = document.getElementById('panel-admin');
+        if (!finalTabEl || !glueTabEl || !finalPanel || !gluePanel) return;
+        finalTabEl.setAttribute('aria-selected','false');
+        glueTabEl.setAttribute('aria-selected','false');
+        finalPanel.classList.remove('active');
+        gluePanel.classList.remove('active');
+        if (adminTabEl && adminPanel){
+          adminTabEl.setAttribute('aria-selected','false');
+          adminPanel.classList.remove('active');
+        }
+        const conf = map[which];
+        if (!conf) return;
+        document.querySelector(conf.tab)?.setAttribute('aria-selected','true');
+        document.querySelector(conf.panel)?.classList.add('active');
+        conf.focus();
+      }
+
+      document.getElementById('tab-final')?.addEventListener('click', ()=>activate('final'));
+      if (glueModule) document.getElementById('tab-glue')?.addEventListener('click',  ()=>activate('glue'));
+      if (adminModule && adminTabBtn){
+        adminTabBtn.addEventListener('click', ()=>activate('admin'));
+      }
+
+      activate(activeTab);
+
+      window.addEventListener('focus', ()=>{
+        if (activeTab === 'final') finalModule.focus();
+        else if (activeTab === 'glue' && glueModule) glueModule.focus();
+        else if (activeTab === 'admin' && adminModule) adminModule.focus();
+      });
+    }
+
+    setupAuth(startApp);
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
+    }
+  }
+})();
+
+
+
+
+
+
+
+
+
+
